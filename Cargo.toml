@@ -1,0 +1,14 @@
+[package]
+name = "car"
+version = "0.0.0"
+authors = ["William Cody Laeder, <codylaeder@gmail.com>"]
+
+[dependencies]
+nom = "2.1.0"
+bzip2 = { path = "algo/bzip2-rs" }
+brotli2 = { path = "algo/brotli2-rs" }
+libflate = { path = "algo/libflate" }
+lzw = { path = "algo/lzw" }
+snap = { path = "algo/rust-snappy" }
+tar = { path = "algo/tar-rs" }
+zstd = { path = "algo/zstd-rs" }
