@@ -194,6 +194,8 @@ fn exists<P: AsRef<Path>>(p: P) -> bool {
   p.as_ref().exists()
 }
 impl ItemState {
+  
+  /// Figure out what _kind_ of item this is
   pub fn conversion(x: String) -> ItemState {
     if is_dir(&x) {
       return ItemState::ExistsDir(PathBuf::from(x));
@@ -207,6 +209,8 @@ impl ItemState {
     }
     ItemState::NotExist(PathBuf::from(x))
   }
+
+  /// Test if an item exists
   pub fn does_exist(&self) -> bool {
     match self {
       &ItemState::ExistsFile(_) |

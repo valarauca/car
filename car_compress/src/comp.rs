@@ -54,7 +54,8 @@ pub enum Decomp<R: Read> {
   Brotli(BrDec<R>),
   Zstd(DzDec<R>),
   Lz4(LzDec<R>),
-  Xz(XzDec<R>)
+  Xz(XzDec<R>),
+  Tar(R)
 }
 impl<R: Read> Read for Decomp<R> {
   fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
@@ -66,6 +67,7 @@ impl<R: Read> Read for Decomp<R> {
       &mut Decomp::Zstd(ref mut x) => x.read(buf),
       &mut Decomp::Lz4(ref mut x) => x.read(buf),
       &mut Decomp::Xz(ref mut x) => x.read(buf),
+      &mut Decomp::Tar(ref mut x) => x.read(buf),
     }
   }
 }
@@ -96,7 +98,7 @@ impl<R: Read+Seek> Decomp<R> {
       Format::Xz(_) => Ok(Decomp::Xz(XzDec::new(r))),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),
       Format::LZH(_) => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unsupported file type LZH")),
-      Format::Tar(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type TAR")),
+      Format::Tar(_) => Ok(Decomp::Tar(r))
     }
   }
 }
@@ -117,7 +119,7 @@ impl<R: Read> Decomp<R> {
       Format::Xz(_) => Ok(Decomp::Xz(XzDec::new(r))),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),
       Format::LZH(_) => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unsupported file type LZH")),
-      Format::Tar(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type TAR")),
+      Format::Tar(_) => Ok(Decomp::Tar(r))
     }
   }
 }
@@ -133,7 +135,8 @@ pub enum Comp<W: Write> {
   Brotli(BrEn<W>),
   Zstd(DzEn<W>),
   Lz4(LzEn<W>),
-  Xz(XzEn<W>)
+  Xz(XzEn<W>),
+  Tar(W)
 }
 impl<W: Write> Write for Comp<W> {
 
@@ -146,7 +149,8 @@ impl<W: Write> Write for Comp<W> {
       &mut Comp::Gzip(ref mut x) => x.write(buf),
       &mut Comp::Brotli(ref mut x) => x.write(buf),
       &mut Comp::Zstd(ref mut x) => x.write(buf),
-      &mut Comp::Lz4(ref mut x) => x.write(buf)
+      &mut Comp::Lz4(ref mut x) => x.write(buf),
+      &mut Comp::Tar(ref mut x) => x.write(buf),
     }
   }
 
@@ -198,7 +202,8 @@ impl<W: Write> Comp<W> {
       Comp::Xz(x) => match x.finish() {
         Ok(x) => Ok(x),
         Err(e) => Err(format!("{:?}", e))
-      }
+      },
+      Comp::Tar(x) => Ok(x)
     }
   }
 
@@ -222,7 +227,7 @@ impl<W: Write> Comp<W> {
       Format::Zip7(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type 7z")),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),
       Format::LZH(_) => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unsupported file type LZH")),
-      Format::Tar(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type TAR")),
+      Format::Tar(_) => Ok(Comp::Tar(w))
     }
   }
 }
