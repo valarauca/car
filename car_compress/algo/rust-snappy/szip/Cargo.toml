@@ -1,0 +1,24 @@
+[package]
+name = "szip"
+version = "0.1.1"  #:version
+authors = ["Andrew Gallant <jamslam@gmail.com>"]
+description = """
+A fast command line tool for snappy compression and decompression.
+"""
+documentation = "https://docs.rs/snap"
+homepage = "https://github.com/BurntSushi/snap"
+repository = "https://github.com/BurntSushi/snap"
+keywords = ["snappy", "compress", "compression", "decompress", "decompression"]
+license = "BSD-3-Clause"
+
+[[bin]]
+name = "szip"
+
+[dependencies]
+docopt = "0.6"
+filetime = "0.1"
+rustc-serialize = "0.3"
+snap = { path = "..", version = "0.2" }
+
+[profile.release]
+debug = true

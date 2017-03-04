@@ -1,0 +1,1 @@
+C:\Users\valarauca\Documents\rust_stuff\xz2-rs\lzma-sys\xz-5.2.2\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe.config

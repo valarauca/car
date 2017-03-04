@@ -1,8 +1,13 @@
 
-use super::header::Format;
-use std::path::PathBuf;
+use super::{
+  Quality,
+  Format
+};
+use std::path::{
+  PathBuf,
+  Path
+};
 use std::env::args;
-
 
 /*
  * What mode the program is in
@@ -43,27 +48,27 @@ named!(what_do<Mode>, do_parse!(
     do_parse!(tag!(b"c") >>
       y: alt_complete!(
         do_parse!(alt!(tag!(b"zf")|tag!(b"fz")) >>
-          (Mode::Create(Format::Gzip))
+          (Mode::Create(Format::Gzip(Quality::Default)))
         )|
         do_parse!(alt!(tag!(b"jf")|tag!(b"fj")) >>
-          (Mode::Create(Format::Bzip2))
+          (Mode::Create(Format::Bzip2(Quality::Default)))
         )|
         do_parse!(alt!(tag!("bJf")|tag!(b"fJ")) >>
-          (Mode::Create(Format::Xz))
+          (Mode::Create(Format::Xz(Quality::Default)))
         )|
         do_parse!(alt!(tag!(b"f4")|tag!(b"4f")) >>
-          (Mode::Create(Format::Lz4))
+          (Mode::Create(Format::Lz4(Quality::Default)))
         )|
         do_parse!(alt!(tag!(b"Df")|tag!(b"fD")) >>
-          (Mode::Create(Format::Zstd))
+          (Mode::Create(Format::Zstd(Quality::Default)))
         )|
         do_parse!(alt!(tag!(b"Sf")|tag!(b"fS")) >>
-          (Mode::Create(Format::Snappy))
+          (Mode::Create(Format::Snappy(Quality::Default)))
         )|
         do_parse!(alt!(tag!(b"Bf")|tag!(b"fB")) >>
-          (Mode::Create(Format::Brotli))
+          (Mode::Create(Format::Brotli(Quality::Default)))
         )|
-        do_parse!(tag!(b"f") >> (Mode::Create(Format::Tar)))
+        do_parse!(tag!(b"f") >> (Mode::Create(Format::Tar(Quality::Default))))
       ) >>
       (y)
     )|
@@ -80,13 +85,12 @@ Cody's Archive Reader
 
 Version: 0.0.1
 
-
 USAGE:
     car.exe [FLAGS] OPTIONS ...
 
 FLAGS:
 
-    THIS IS AN EXTREMELY EARLY RELEASE SO NO ALL TAR FLAGS
+    THIS IS AN EXTREMELY EARLY RELEASE SO NOT ALL TAR FLAGS
     ARE SUPPORTED
 
 
@@ -117,9 +121,9 @@ FLAGS:
       cf : create file        (.tar)        (no compression)
 
       -extraction-
-      WHAT IS BEING EXTRACT IS DETECTED AT RUNTIME
       
       xf : extract file
+        the format of what is being extracted is determined at runtime
 
       -diff-
       COMING SOON
@@ -128,33 +132,10 @@ FLAGS:
       COMING SOONER
       
       -append-
-      COMING NEVER
+      COMING MAYBE
 
       -delete-
       COMING ABOUT THE SAME TIME AS -list-
-
-NOTES:
-
-  Eventually additional options will be supported
-    -All the LZMA tuning stuff
-    -Brotli Text/Generic modes
-    -Zstd dictionary building 
-      (is there a framing format for dictionary+data(?))
-  
-DEFAULTS:
-
-  Generally I looked for the inflection point where high compression
-  level resulted in a larger slow down than compression ratio savings.
-  The source for this was using Przemyslaw Skibinski (github.com/inikep)'s
-  lzbench results.
-
-  Brotli is set to quality level 5 (generic mode)
-    (generally should pull off better compression then LZMA at ~2x speed)
-  Lz4 is set to quality level 6
-  XZ is set to quality level 1
-  ZSTD is set to quality level 8
-    (this should provide compression on par with gzip -9 with ~4x speed)
-
 ";
 const VERSION: &'static str = "v0.0.1";
 
@@ -166,7 +147,7 @@ const VERSION: &'static str = "v0.0.1";
 fn get_mode(x: &str) -> Mode {
   use super::nom::IResult;
   match what_do(x.as_bytes()) {
-    IResult::Done(_,y) => match y {
+    IResult::Done(x,y) => match y {
       Mode::Help => {
         println!("{}",HELP);
         ::std::process::exit(0);
@@ -175,27 +156,86 @@ fn get_mode(x: &str) -> Mode {
         println!("{}", VERSION);
         ::std::process::exit(0);
       },
-      x => x,
+      z=> {
+        if x.len() != 0 {
+          println!("I didn't understand that command. Please use `-help`");
+          ::std::process::exit(1);
+        } else {
+          z
+        }
+      }
     },
     IResult::Error(_) |
     IResult::Incomplete(_) => {
       println!("I didn't understand that.");
-      println!("Try -h to display help");
+      println!("Try `-help` to display help");
       ::std::process::exit(1);
     }
   }
 }
 fn get_args() -> Vec<String> {
-  args().collect()
+  args().skip(1).collect()
 }
 
 
-/*
- * Actual Things to use
- *
- */
-pub enum Operation {
-  Compress(Format,PathBuf,PathBuf),
-  Extract(PathBuf, PathBuf),
+/// What state a CLI argument is in
+pub enum ItemState {
+  ExistsFile(PathBuf),
+  ExistsDir(PathBuf),
+  NotExist(PathBuf)
+}
+fn is_dir<P: AsRef<Path>>(p: P) -> bool {
+  p.as_ref().is_dir()
+}
+fn is_file<P: AsRef<Path>>(p: P) -> bool {
+  p.as_ref().is_file()
+}
+fn exists<P: AsRef<Path>>(p: P) -> bool {
+  p.as_ref().exists()
+}
+impl ItemState {
+  pub fn conversion(x: String) -> ItemState {
+    if is_dir(&x) {
+      return ItemState::ExistsDir(PathBuf::from(x));
+    }
+    if is_file(&x) {
+      return ItemState::ExistsFile(PathBuf::from(x));
+    }
+    if exists(&x) {
+      println!("I'm a really new program I can't handle symlinks");
+      ::std::process::exit(1);
+    }
+    ItemState::NotExist(PathBuf::from(x))
+  }
+  pub fn does_exist(&self) -> bool {
+    match self {
+      &ItemState::ExistsFile(_) |
+      &ItemState::ExistsDir(_) => true,
+      _ => false
+    }
+  }
 }
 
+/// Build the CLI arg
+pub fn fetch() -> (Mode,ItemState,Vec<ItemState>) {
+
+  let mut v = get_args();
+  if v.len() == 0 {
+    println!("I didn't understand that. Please use `-help` for help");
+    ::std::process::exit(1);
+  }
+  let mm = v.remove(0);
+  let m = get_mode(&mm);
+  
+  if v.len() == 0 {
+    println!("can't provide flags without paths/files to work on");
+    ::std::process::exit(1);
+  }
+  let ii = v.remove(0);
+  let i = ItemState::conversion(ii);
+  let x: Vec<ItemState> = v.into_iter()
+    .map(ItemState::conversion)
+    .filter(|x| x.does_exist())
+    .collect();
+  (m,i,x)
+}

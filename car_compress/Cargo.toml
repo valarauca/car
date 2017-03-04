@@ -1,0 +1,14 @@
+[package]
+name = "car_compress"
+version = "0.0.0"
+authors = ["William Cody Laeder, <codylaeder@gmail.com>"]
+
+[dependencies]
+bzip2 = { path = "algo/bzip2-rs" }
+brotli2 = { path = "algo/brotli2-rs" }
+flate2 = { path = "algo/flate2-rs" }
+lzw = { path = "algo/lzw" }
+snap = { path = "algo/rust-snappy" }
+zstd = { path = "algo/zstd-rs" }
+lz4 = { path = "algo/lz4-rs" }
+xz2 = { path = "algo/xz2-rs" }

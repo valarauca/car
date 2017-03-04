@@ -1,0 +1,21 @@
+[package]
+name = "xz2"
+version = "0.1.0"
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+keywords = ["lzma", "xz", "encoding"]
+repository = "https://github.com/alexcrichton/xz2-rs"
+homepage = "https://github.com/alexcrichton/xz2-rs"
+documentation = "http://alexcrichton.com/xz2-rs"
+description = """
+Rust bindings to liblzma providing Read/Write streams as well as low-level
+in-memory encoding/decoding.
+"""
+
+[dependencies]
+lzma-sys = { path = "lzma-sys", version = "0.1" }
+
+[dev-dependencies]
+rand = "0.3"
+quickcheck = "0.2"

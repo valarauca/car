@@ -1,0 +1,16 @@
+[package]
+name = "snappy-cpp"
+version = "0.1.1"
+authors = ["Andrew Gallant <jamslam@gmail.com>"]
+license = "BSD-3-Clause"
+repository = "https://github.com/BurntSushi/snap"
+documentation = "https://docs.rs/snap"
+homepage = "https://github.com/BurntSushi/snap"
+description = "Simple Snappy C++ bindings for testing and benchmarking."
+build = "build.rs"
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+pkg-config = "0.3"
