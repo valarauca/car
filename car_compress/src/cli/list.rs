@@ -114,6 +114,8 @@ pub fn exec(
       };
       println!("\tGroup Name: {}",g);
     }
+    let path = header.path()?;
+    println!("{:?}",path);
     if user {
       let u = match header.username() {
         Ok(Option::Some(x)) => x,

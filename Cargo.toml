@@ -6,5 +6,5 @@ authors = ["William Cody Laeder, <codylaeder@gmail.com>"]
 [dependencies]
 nom = "2.1.0"
 car_compress = { path = "car_compress" }
-tar = { path = "tar-rs" }
+tar = "0.4.10"
 walkdir = "1"

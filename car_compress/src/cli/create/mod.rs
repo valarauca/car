@@ -1,5 +1,8 @@
 
+#![allow(unused_imports)]
 use super::{
+  Format,
+  Quality,
   App,
   SubCommand,
   ArgMatches,
@@ -17,8 +20,15 @@ extern crate walkdir;
 use self::walkdir::WalkDir;
 
 mod tar;
+mod snap;
+mod lz4;
+mod zstd;
+mod brotli;
+mod gzip;
+mod bzip2;
+mod xz;
 
-fn valid_item(x: String) -> Result<(),String> {
+pub fn valid_item(x: String) -> Result<(),String> {
   let p = PathBuf::from(&x);
   match (p.exists(),p.is_file()|p.is_dir()) {
     (true,true) => Ok(()),
@@ -27,7 +37,7 @@ fn valid_item(x: String) -> Result<(),String> {
   }
 }
 
-fn item_exists(x: String) -> Result<(),String> {
+pub fn item_exists(x: String) -> Result<(),String> {
   let p = PathBuf::from(&x);
   if p.exists() {
     Err(format!("{} exists\nCowardly refusing to delete it",&x))
@@ -36,38 +46,62 @@ fn item_exists(x: String) -> Result<(),String> {
   }
 }
 
+pub fn get_comp_level(x: &ArgMatches) -> Quality {
+  if x.is_present("fast") {
+    return Quality::FastLow;
+  }
+  if x.is_present("slow") {
+    return Quality::SlowHigh;
+  }
+  Quality::Default
+}
+
 /// Build command
 pub fn build<'a>() -> App<'static,'a> {
   SubCommand::with_name("create")
     .about("Create a tar archive")
-    .arg(Arg::with_name("file")
-      .short("f")
-      .long("file")
-      .takes_value(true)
-      .multiple(true)
-      .value_name("FILE/DIR")
-      .required(true)
-      .validator(valid_item)
-      .next_line_help(true)
-      .global(true)
-      .help("what to tar"))
-    .arg(Arg::with_name("output")
-      .short("o")
-      .long("out")
-      .takes_value(true)
-      .multiple(false)
-      .value_name("OUTFILE")
-      .required(true)
-      .validator(item_exists)
-      .global(true)
-      .help("tarball output"))
-     .subcommand(tar::build())
+    .subcommand(tar::build())
+    .subcommand(snap::build())
+    .subcommand(lz4::build())
+    .subcommand(zstd::build())
+    .subcommand(brotli::build())
+    .subcommand(gzip::build())
+    .subcommand(bzip2::build())
+    .subcommand(xz::build())
 }
 
 /// Get a sub command
 pub fn get(x: &ArgMatches) -> Operation {
   match x.subcommand_matches("tar") {
     Option::Some(x) => return tar::get(x),
+    Option::None => { },
+  };
+  match x.subcommand_matches("snappy") {
+    Option::Some(x) => return snap::get(x),
+    Option::None => { }
+  };
+  match x.subcommand_matches("lz4") {
+    Option::Some(x) => return lz4::get(x),
+    Option::None => { },
+  };
+  match x.subcommand_matches("zstd") {
+    Option::Some(x) => return zstd::get(x),
+    Option::None => { },
+  };
+  match x.subcommand_matches("brotli") {
+    Option::Some(x) => return brotli::get(x),
+    Option::None => { },
+  };
+  match x.subcommand_matches("gzip") {
+    Option::Some(x) => return gzip::get(x),
+    Option::None => { },
+  };
+  match x.subcommand_matches("bzip2") {
+    Option::Some(x) => return bzip2::get(x),
+    Option::None => { },
+  };
+  match x.subcommand_matches("xz") {
+    Option::Some(x) => return xz::get(x),
     Option::None => { },
   };
   println!("I didn't understand that");

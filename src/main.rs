@@ -12,23 +12,48 @@ pub use self::car_compress::{
   Format,
   Quality,
   Comp,
-  Decomp
+  Decomp,
 };
-mod cli;
-mod fsinteract;
-
+use self::car_compress::cli::Operation;
+use std::io::Write;
 
 fn main() {
 
-  //a lot of CLI logic
-  let arg = cli::fetch();
-  match fsinteract::top_level(arg) {
-    Ok(()) => { 
-      //sunglasses emoji
-    },
-    Err(e) => {
-      println!("IO error occured while compressing.\n {:?}", e);
-      ::std::process::exit(1);
-    }
-  };
+  let arg = Operation::from_cli();
+  if arg.is_read_action() {
+    let reader = match arg.build_reader() {
+      Ok(x) => x,
+      Err(e) => {
+        println!("Could not construct reader");
+        println!("{:?}",e);
+        ::std::process::exit(1);
+      }
+    };
+    let a = Archive::new(reader);
+    match arg.do_read(a) {
+      Ok(_) => ::std::process::exit(0),
+      Err(e) => {
+        println!("Encountered unrecoverable error");
+        println!("{:?}",e);
+        ::std::process::exit(1);
+      }
+    };
+  } else {
+    
+    match arg.do_compress() {
+      Ok(mut x) => match x.flush() {
+        Ok(_) => ::std::process::exit(0),
+        Err(e) => {
+          println!("Compression succeeded, but flushing the file didn't");
+          println!("{:?}",e);
+          ::std::process::exit(1);
+        }
+      },
+      Err(e) => {
+        println!("Encountered unrecoverable error");
+        println!("{:?}",e);
+        ::std::process::exit(1);
+      }
+    };
+  }
 }

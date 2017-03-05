@@ -34,6 +34,7 @@ pub use std::io::{
 };
 
 use super::{
+  Quality,
   Format,
   Comp,
   Decomp
