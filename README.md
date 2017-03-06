@@ -3,13 +3,12 @@ car
 
 Cody's Archive Reader
 
-This is an alternative to `tar` which supports _mostly_ similiar CLI
-options... This is a work in progress `tar` does _a lot_. Currently it
-is compatible to tar and supports most the _main stream_ formats which are
-`gzip`, `xz`, `bzip2`, and `lzw`.
-
-`car` has support for new tools like `brotli`, `zstd`, `lz4`, and `snappy`
-built into itself.
+* Alternative to GNU Tar.
+* Files produced by CAR can be read by TAR, and vice versa. 
+* Has a different argument layout then *traditional* TAR which I feel is more readable.
+* Supports extracting/listing with regex filters
+* File sizes when listing is _always_ human readable.
+* Update/Diff/Concatenate/Append not supported
 
 ###How to install:
 1. Install Rust and Cargo
@@ -21,7 +20,7 @@ built into itself.
 
 ###Usage:
 
-This does not suppor the legacy, unix, or GNU flag styles. In the true spirit of TAR
+This does not support the legacy, unix, or GNU flag styles. In the true spirit of TAR
 I've created **MY OWN** flag systel. Which is based on sub commands so it should be
 fairly easy to pick up a few examples
 
@@ -32,7 +31,6 @@ fairly easy to pick up a few examples
 
 car create gzip -f dir1/ dir2/ dir3/ -o bundle.tar.gz
 car create xz -f stuff.tar -o stuff.tar.gz
-
 #Some algorithms support --fast and --slow (for a stand in to -0/-9)
 car create lz4 -f dir1 -o dir1.tar.lz4 --fast
 
@@ -40,7 +38,6 @@ car create lz4 -f dir1 -o dir1.tar.lz4 --fast
 #Listing Contents:
 
 car list -f bundle.tar.gz
-
 #You can list additional things by providing flags
 car list -f bundle.tar.gz --username --groupname --size
 #You can even filter the list view via regex
@@ -49,7 +46,6 @@ car list -f bundle.tar.gz --regex='.*exe' --size
 #Extracting:
 
 car extract -f bundle.tar.gz -o where/to/extract
-
 #Extracting with regex
 car extract -f bundle.tar.gz --regex '.*c'
 ```
