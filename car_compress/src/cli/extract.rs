@@ -108,7 +108,7 @@ pub fn exec<R: Read>(
     #[cfg(unix)]
     {
       entry.set_unpack_xattrs(xattrs);
-      entry.set_perserve_permissions(perms);
+      entry.set_preserve_permissions(perms);
     }
     match to {
       &Option::None => entry.unpack_in(".")?,
@@ -129,7 +129,7 @@ pub fn get(x: &ArgMatches) -> Operation {
     },
     match x.value_of("out") {
       Option::None => None,
-      Option::Some(o) => PathBuf::from(o)
+      Option::Some(o) => Some(PathBuf::from(o))
     },
     x.is_present("xattrs"),
     x.is_present("perms")
