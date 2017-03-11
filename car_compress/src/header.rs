@@ -1,10 +1,7 @@
 
 
-extern crate bzip2;
-use self::bzip2::Compression as BzComp;
-
-extern crate flate2;
-use self::flate2::Compression as GzComp;
+use super::libbzip::BzQuality;
+use super::libflate::GzQuality;
 
 use std::path::Path;
 use std::io::{
@@ -91,30 +88,26 @@ impl Quality {
       Quality::SlowHigh => 7,
     }
   }
+  pub fn into_bz(self) -> BzQuality {
+    match self {
+      Quality::Default => BzQuality::Default,
+      Quality::FastLow => BzQuality::Fastest,
+      Quality::SlowHigh => BzQuality::Best
+    }
+  }
+  pub fn into_gz(self) -> GzQuality {
+    match self {
+      Quality::Default => GzQuality::Default,
+      Quality::FastLow => GzQuality::Fast,
+      Quality::SlowHigh => GzQuality::Best
+    }
+  }
 }
 impl Default for Quality {
   
   /// This returns `Quality::Default` which may suprrise you
   fn default() -> Self {
     Quality::Default
-  }
-}
-impl Into<BzComp> for Quality {
-  fn into(self) -> BzComp {
-    match self {
-      Quality::Default => BzComp::Default,
-      Quality::FastLow => BzComp::Fastest,
-      Quality::SlowHigh => BzComp::Best
-    }
-  }
-}
-impl Into<GzComp> for Quality {
-  fn into(self) -> GzComp {
-    match self {
-      Quality::Default => GzComp::Default,
-      Quality::FastLow => GzComp::Fast,
-      Quality::SlowHigh => GzComp::Best
-    }
   }
 }
 

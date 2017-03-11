@@ -1,6 +1,6 @@
 [package]
 name = "car_compress"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["William Cody Laeder, <codylaeder@gmail.com>"]
 
 [dependencies]
@@ -12,7 +12,3 @@ snap = { path = "algo/rust-snappy" }
 zstd = { path = "algo/zstd-rs" }
 lz4 = { path = "algo/lz4-rs" }
 xz2 = { path = "algo/xz2-rs" }
-clap = "2.20.5"
-regex = "0.1.18"
-tar = "0.4.10"
-walkdir = "1.0.7"

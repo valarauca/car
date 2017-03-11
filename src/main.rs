@@ -17,6 +17,7 @@
 #[macro_use]
 extern crate nom;
 extern crate car_compress;
+extern crate car_cli;
 extern crate tar;
 extern crate walkdir;
 pub use self::tar::{
@@ -29,7 +30,7 @@ pub use self::car_compress::{
   Comp,
   Decomp,
 };
-use self::car_compress::cli::Operation;
+use self::car_cli::Operation;
 use std::io::Write;
 
 fn main() {

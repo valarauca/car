@@ -7,6 +7,7 @@ pub use self::tar::{
   Header,
   Builder
 };
+
 extern crate clap;
 pub use self::clap::{
   App,
@@ -14,6 +15,7 @@ pub use self::clap::{
   ArgMatches,
   SubCommand
 };
+
 extern crate regex;
 pub use self::regex::{
   Regex,
@@ -33,7 +35,8 @@ pub use std::io::{
   Read
 };
 
-use super::{
+extern crate car_compress; 
+use car_compress::{
   Quality,
   Format,
   Comp,

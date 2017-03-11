@@ -1,0 +1,12 @@
+[package]
+name = "car_cli"
+version = "0.1.0"
+authors = ["William Cody Laeder <codylaeder@gmail.com>"]
+
+[dependencies]
+car_compress = { path = "../car_compress/" }
+clap = "2.20.5"
+regex = "0.1.18"
+tar = "0.4.10"
+walkdir = "1.0.7"
+

@@ -11,38 +11,32 @@ use std::io::{
   BufReader
 };
 
-extern crate bzip2;
-use self::bzip2::write::BzEncoder as BzEn;
-use self::bzip2::read::BzDecoder as BzDec;
+use super::libbzip::Encode as BzEn;
+use super::libbzip::Decode as BzDec;
 
-extern crate brotli2;
-use self::brotli2::write::BrotliEncoder as BrEn;
-use self::brotli2::read::BrotliDecoder as BrDec;
+use super::libbrotli::Encode as BrEn;
+use super::libbrotli::Decode as BrDec;
 
-extern crate flate2;
-use self::flate2::write::GzEncoder as GzEn;
-use self::flate2::read::GzDecoder as GzDec;
+use super::libflate::Encode as GzEn;
+use super::libflate::Decode as GzDec;
 
-extern crate xz2;
-use self::xz2::read::XzDecoder as XzDec;
-use self::xz2::write::XzEncoder as XzEn;
+use super::libxz::Decode as XzDec;
+use super::libxz::Encode as XzEn;
 
-extern crate snap;
-use self::snap::{
-  Reader as SzDec,
-  Writer as SzEn
+use super::libsnap::{
+  Decode as SzDec,
+  Encode as SzEn
 };
 
-extern crate zstd;
-use self::zstd::stream::{
-  Encoder as DzEn,
-  Decoder as DzDec
+use super::libzstd::{
+  Encode as DzEn,
+  Decode as DzDec
 };
 
-extern crate lz4;
-use self::lz4::{
-  Encoder as LzEn,
-  Decoder as LzDec
+use super::liblz4::{
+  Encode as LzEn,
+  Decode as LzDec,
+  Builder as LzBuild
 };
 
 
@@ -217,12 +211,12 @@ impl<W: Write> Comp<W> {
   ///you combine many files _into_ a tar ball. 
   pub fn from_format(f: Format, w: W) -> io::Result<Comp<W>> {
     match f {
-      Format::Bzip2(q) => Ok(Comp::Bzip2(BzEn::new(w, q.into()))),
-      Format::Gzip(q) => Ok(Comp::Gzip(GzEn::new(w, q.into()))),
+      Format::Bzip2(q) => Ok(Comp::Bzip2(BzEn::new(w, q.into_bz()))),
+      Format::Gzip(q) => Ok(Comp::Gzip(GzEn::new(w, q.into_gz()))),
       Format::Snappy(_) => Ok(Comp::Snap(SzEn::new(w))),
       Format::Brotli(q) => Ok(Comp::Brotli(BrEn::new(w,q.into_brotli()))),
       Format::Zstd(q) => Ok(Comp::Zstd(DzEn::new(w,q.into_zstd())?)),
-      Format::Lz4(_) => Ok(Comp::Lz4(self::lz4::EncoderBuilder::new().build(w)?)),
+      Format::Lz4(_) => Ok(Comp::Lz4(LzBuild::new().build(w)?)),
       Format::Xz(q) => Ok(Comp::Xz(XzEn::new(w,q.into_xz()))),
       Format::Zip7(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type 7z")),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),
