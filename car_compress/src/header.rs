@@ -3,12 +3,29 @@
 use super::libbzip::BzQuality;
 use super::libflate::GzQuality;
 
+use super::libbrotli::{
+  Encode as BrEn,
+  Builder as BrBuilder,
+  Mode as BrMode
+};
+
+use super::libzstd::Encode as DzEn;
+
+use super::liblz4::{
+  Encode as LzEn,
+  Builder as LzBuilder,
+  BSize as Lz4BSize,
+  BMode as Lz4BMode,
+  Checksum as Lz4Checksum
+};
+
+
 use std::path::Path;
 use std::io::{
   self,
   Read,
   Seek,
-  SeekFrom
+  SeekFrom,
 };
 use std::fs::OpenOptions;
 use std::default::Default;
@@ -60,46 +77,125 @@ use std::default::Default;
 ///* `Quality::FastLow`: 0
 ///* `Quality::Default`: 3
 ///* `Quality::SlowHigh`: 7
-#[derive(Copy,Clone,Debug,PartialEq,Eq)]
+#[derive(Clone,Debug)]
 pub enum Quality {
   Default,
   FastLow,
-  SlowHigh
+  SlowHigh,
+
+  /// Level ranges from 1 to 21
+  ZstdSpecial(i32),
+
+  /// Level ranges from 0 to 11
+  BrotliSpecial(BrMode,u32,u32,u32),
+  
+  /// level ranges from 0 to 16
+  Lz4Special(Lz4BSize,Lz4BMode,Lz4Checksum,u32)
 }
 impl Quality {
-  pub fn into_zstd(self) -> i32 {
+  
+
+  /// Creates a closure which contructs the LZ4 encoder with
+  /// the compression information in the enum
+  pub fn into_lz4<W: io::Write>(self) -> Box<Fn(W) -> io::Result<LzEn<W>>> {
     match self {
-      Quality::Default => 10,
-      Quality::FastLow => 1,
-      Quality::SlowHigh => 20
+      Quality::FastLow => Box::new(move |w| {
+        let mut b = LzBuilder::new();
+        b.level(1);
+        b.checksum(Lz4Checksum::NoChecksum);
+        b.build(w)
+      }),
+      Quality::SlowHigh => Box::new(move |w| {
+        let mut b = LzBuilder::new();
+        b.level(16);
+        b.block_size(Lz4BSize::Max4MB);
+        b.block_mode(Lz4BMode::Linked);
+        b.checksum(Lz4Checksum::ChecksumEnabled);
+        b.build(w)
+      }),
+      Quality::Lz4Special(bsize, bmode, csu, lvl) => Box::new(move |w| {
+        let mut b = LzBuilder::new();
+        b.level(lvl.clone());
+        b.block_size(bsize);
+        b.block_mode(bmode);
+        b.checksum(csu);
+        b.build(w)
+      }),
+      _ => Box::new(move |w| {
+        LzBuilder::new().build(w)
+      })
     }
   }
-  pub fn into_brotli(self) -> u32 {
+ 
+ /// Creates a closure which constructs the ZSTD encoder with
+  /// the compression information in the enum
+  pub fn into_zstd<W: io::Write>(self) -> Box<Fn(W) -> io::Result<DzEn<W>>> {
     match self {
-      Quality::Default => 5,
-      Quality::FastLow => 2,
-      Quality::SlowHigh => 10,
+      Quality::FastLow => Box::new(move |w| {
+        DzEn::new(w,1)
+      }),
+      Quality::SlowHigh => Box::new(move |w| {
+        DzEn::new(w,21)
+      }),
+      Quality::ZstdSpecial(qual) => Box::new(move |w| {
+        DzEn::new(w,qual.clone())
+      }),
+      _ => Box::new(move |w| {
+        DzEn::new(w,10)
+      }),
     }
   }
+  
+  /// Creates a closure which constructs the Brotli encoder with
+  /// the compression information in the enum
+  pub fn into_brotli<W: io::Write>(self) -> Box<Fn(W) -> BrEn<W>> {
+    match self {
+      Quality::BrotliSpecial(mode, qual, win, block) => Box::new(move |w| {
+        let brotli_mode = mode.clone();
+        let quality = qual.clone();
+        let window = win.clone();
+        let block = block.clone();
+        let mut c = BrBuilder::new();
+        c.mode(brotli_mode);
+        c.quality(quality);
+        c.lgwin(window);
+        c.lgblock(block);
+        BrEn::from_params(w, &c)
+      }),
+      Quality::FastLow => Box::new(move |w| {
+        BrEn::new(w, 2)
+      }),
+      Quality::SlowHigh => Box::new(move |w| {
+        BrEn::new(w, 10)
+      }),
+      _ => Box::new(move |w| {
+        BrEn::new(w, 5)
+      })
+    }
+  }
+
   pub fn into_xz(self) -> u32 {
     match self {
-      Quality::Default => 0,
       Quality::FastLow => 3,
       Quality::SlowHigh => 7,
+      _ => 0
     }
   }
+  
   pub fn into_bz(self) -> BzQuality {
     match self {
-      Quality::Default => BzQuality::Default,
       Quality::FastLow => BzQuality::Fastest,
-      Quality::SlowHigh => BzQuality::Best
+      Quality::SlowHigh => BzQuality::Best,
+      _ => BzQuality::Default,
+
     }
   }
+  
   pub fn into_gz(self) -> GzQuality {
     match self {
-      Quality::Default => GzQuality::Default,
       Quality::FastLow => GzQuality::Fast,
-      Quality::SlowHigh => GzQuality::Best
+      Quality::SlowHigh => GzQuality::Best,
+      _ => GzQuality::Default,
     }
   }
 }
@@ -116,7 +212,7 @@ impl Default for Quality {
 ///
 /// This can be detected, or set by the user depending on if
 /// they're compressing or decompressing.
-#[derive(Copy,Clone,Debug,PartialEq,Eq)] 
+#[derive(Clone,Debug)] 
 pub enum Format {
   LZW(Quality),
 	LZH(Quality),

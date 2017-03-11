@@ -8,7 +8,7 @@ use std::io::{
   Read,
   Write,
   Seek,
-  BufReader
+  BufReader,
 };
 
 use super::libbzip::Encode as BzEn;
@@ -36,9 +36,7 @@ use super::libzstd::{
 use super::liblz4::{
   Encode as LzEn,
   Decode as LzDec,
-  Builder as LzBuild
 };
-
 
 /// Abstraction around several _kinds_ of decompressors
 pub enum Decomp<R: Read> {
@@ -214,9 +212,9 @@ impl<W: Write> Comp<W> {
       Format::Bzip2(q) => Ok(Comp::Bzip2(BzEn::new(w, q.into_bz()))),
       Format::Gzip(q) => Ok(Comp::Gzip(GzEn::new(w, q.into_gz()))),
       Format::Snappy(_) => Ok(Comp::Snap(SzEn::new(w))),
-      Format::Brotli(q) => Ok(Comp::Brotli(BrEn::new(w,q.into_brotli()))),
-      Format::Zstd(q) => Ok(Comp::Zstd(DzEn::new(w,q.into_zstd())?)),
-      Format::Lz4(_) => Ok(Comp::Lz4(LzBuild::new().build(w)?)),
+      Format::Brotli(q) => Ok(Comp::Brotli((q.into_brotli())(w))),
+      Format::Zstd(q) => Ok(Comp::Zstd((q.into_zstd())(w)?)),
+      Format::Lz4(q) => Ok(Comp::Lz4((q.into_lz4()(w)?))),
       Format::Xz(q) => Ok(Comp::Xz(XzEn::new(w,q.into_xz()))),
       Format::Zip7(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type 7z")),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),

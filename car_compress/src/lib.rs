@@ -9,7 +9,7 @@ extern crate lz4;
 pub mod liblz4 {
   pub use super::lz4::{
     BlockSize as BSize,
-    BlockMode as Bmode,
+    BlockMode as BMode,
     ContentChecksum as Checksum,
     Decoder as Decode,
     Encoder as Encode,

@@ -15,7 +15,7 @@ unsafe impl Send for LZ4FDecompressionContext {}
 
 pub type LZ4FErrorCode = size_t;
 
-#[derive(Clone)]
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
 #[repr(u32)]
 pub enum BlockSize {
     Default = 0, // Default - 64KB
@@ -37,14 +37,14 @@ impl BlockSize {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
 #[repr(u32)]
 pub enum BlockMode {
     Linked = 0,
     Independent,
 }
 
-#[derive(Clone)]
+#[derive(Clone,PartialEq,Eq,Copy,Debug)]
 #[repr(u32)]
 pub enum ContentChecksum {
     NoChecksum = 0,

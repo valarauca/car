@@ -9,7 +9,8 @@ This file exists to list credit/thanks/changes.
 
 * Credit: [nwin](https://github.com/nwin)]
 * Repo: [link](https://github.com/nwin/lzw)]
-* Changes: NONE
+* Changes:
+  * 2017-03-11: Updated `lzw.rs` to no longer import `std::io::Write` just to a build warning
 * License: MIT/Apache-2.0 (Dual license)
 
 #Gzip
@@ -42,6 +43,7 @@ This file exists to list credit/thanks/changes.
 * Repo: [link](https://github.com/alexcrichton/brotli2-rs)
 * Changes:
   * 2017-03-01: Modified constructors [Pull Request](https://github.com/alexcrichton/brotli2-rs/pull/6)
+  * 2017-03-11: Modified `CompresssionMode` to have the `Clone`, `Copy`, and `Debug` traits. Included in above PR
 * License: MIT/Apache-2.0 (Dual License)
 
 #Lz4
@@ -49,6 +51,7 @@ This file exists to list credit/thanks/changes.
 * Repo: [link](https://github.com/bozaro/lz4-rs)
 * Changes:
   * 2017-03-01: Updated `lz4-rs/lz4-sys/src/lib.rs` due to type check error in test line ~347 (deleted test) [bug_report](https://github.com/bozaro/lz4-rs/issues/19)
+  * 2017-03-11: Updated several `EncoderBuilder` enumerators to allow for `Clone`, `Copy`, and `Debug` traits
 * License: MIT
 
 #Tar

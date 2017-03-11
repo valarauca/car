@@ -5,7 +5,7 @@
 // and a C++ implementatation
 
 use std::io;
-use std::io::{Read, Write};
+use std::io::Read;
 
 use bitstream::{Bits, BitReader, BitWriter};
 
