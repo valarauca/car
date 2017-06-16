@@ -166,7 +166,12 @@ impl Quality {
         BrEn::new(w, 2)
       }),
       Quality::SlowHigh => Box::new(move |w| {
-        BrEn::new(w, 10)
+        let mut c = BrBuilder::new();
+        c.mode(BrMode::Text);
+        c.quality(11);
+        c.lgwin(24);
+        c.lgblock(24);
+        BrEn::from_params(w, &c)
       }),
       _ => Box::new(move |w| {
         BrEn::new(w, 5)
