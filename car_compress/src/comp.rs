@@ -9,6 +9,7 @@ use std::io::{
   Write,
   Seek,
   BufReader,
+  BufWriter
 };
 
 use super::libbzip::Encode as BzEn;
@@ -40,14 +41,14 @@ use super::liblz4::{
 
 /// Abstraction around several _kinds_ of decompressors
 pub enum Decomp<R: Read> {
-  Bzip2(BzDec<R>),
+  Bzip2(BzDec<BufReader<R>>),
   Snap(SzDec<BufReader<R>>),
   Gzip(GzDec<BufReader<R>>),
-  Brotli(BrDec<R>),
-  Zstd(DzDec<R>),
-  Lz4(LzDec<R>),
-  Xz(XzDec<R>),
-  Tar(R)
+  Brotli(BrDec<BufReader<R>>),
+  Zstd(DzDec<BufReader<R>>),
+  Lz4(LzDec<BufReader<R>>),
+  Xz(XzDec<BufReader<R>>),
+  Tar(BufReader<R>)
 }
 impl<R: Read> Read for Decomp<R> {
   fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
@@ -80,17 +81,17 @@ impl<R: Read+Seek> Decomp<R> {
     let mut r = r;
     let f = Format::from_reader(&mut r)?;
     match f {
-      Format::Bzip2(_) => Ok(Decomp::Bzip2(BzDec::new(r))),
-      Format::Snappy(_) => Ok(Decomp::Snap(SzDec::new(BufReader::with_capacity(16384,r)))),
-      Format::Gzip(_) => Ok(Decomp::Gzip(GzDec::new(BufReader::with_capacity(16384,r))?)),
-      Format::Brotli(_) => Ok(Decomp::Brotli(BrDec::new(r))),
-      Format::Zstd(_) => Ok(Decomp::Zstd(DzDec::new(r)?)),
-      Format::Lz4(_) => Ok(Decomp::Lz4(LzDec::new(r)?)),
+      Format::Bzip2(_) => Ok(Decomp::Bzip2(BzDec::new(BufReader::with_capacity(131072,r)))),
+      Format::Snappy(_) => Ok(Decomp::Snap(SzDec::new(BufReader::with_capacity(131072,r)))),
+      Format::Gzip(_) => Ok(Decomp::Gzip(GzDec::new(BufReader::with_capacity(131072,r))?)),
+      Format::Brotli(_) => Ok(Decomp::Brotli(BrDec::new(BufReader::with_capacity(131072,r)))),
+      Format::Zstd(_) => Ok(Decomp::Zstd(DzDec::new(BufReader::with_capacity(131072,r))?)),
+      Format::Lz4(_) => Ok(Decomp::Lz4(LzDec::new(BufReader::with_capacity(131072,r))?)),
       Format::Zip7(_) |
-      Format::Xz(_) => Ok(Decomp::Xz(XzDec::new(r))),
+      Format::Xz(_) => Ok(Decomp::Xz(XzDec::new(BufReader::with_capacity(131072,r)))),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),
       Format::LZH(_) => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unsupported file type LZH")),
-      Format::Tar(_) => Ok(Decomp::Tar(r))
+      Format::Tar(_) => Ok(Decomp::Tar(BufReader::with_capacity(131072,r)))
     }
   }
 }
@@ -101,17 +102,17 @@ impl<R: Read> Decomp<R> {
   /// Quality argument is ignored
   pub fn from_known(f: Format, r: R) -> io::Result<Decomp<R>> {
     match f {
-      Format::Bzip2(_) => Ok(Decomp::Bzip2(BzDec::new(r))),
-      Format::Snappy(_) => Ok(Decomp::Snap(SzDec::new(BufReader::with_capacity(16384,r)))),
-      Format::Gzip(_) => Ok(Decomp::Gzip(GzDec::new(BufReader::with_capacity(16384,r))?)),
-      Format::Brotli(_) => Ok(Decomp::Brotli(BrDec::new(r))),
-      Format::Zstd(_) => Ok(Decomp::Zstd(DzDec::new(r)?)),
-      Format::Lz4(_) => Ok(Decomp::Lz4(LzDec::new(r)?)),
+      Format::Bzip2(_) => Ok(Decomp::Bzip2(BzDec::new(BufReader::with_capacity(131072,r)))),
+      Format::Snappy(_) => Ok(Decomp::Snap(SzDec::new(BufReader::with_capacity(131072,r)))),
+      Format::Gzip(_) => Ok(Decomp::Gzip(GzDec::new(BufReader::with_capacity(131072,r))?)),
+      Format::Brotli(_) => Ok(Decomp::Brotli(BrDec::new(BufReader::with_capacity(131072,r)))),
+      Format::Zstd(_) => Ok(Decomp::Zstd(DzDec::new(BufReader::with_capacity(131072,r))?)),
+      Format::Lz4(_) => Ok(Decomp::Lz4(LzDec::new(BufReader::with_capacity(131072,r))?)),
       Format::Zip7(_) |
-      Format::Xz(_) => Ok(Decomp::Xz(XzDec::new(r))),
+      Format::Xz(_) => Ok(Decomp::Xz(XzDec::new(BufReader::with_capacity(131072,r)))),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),
       Format::LZH(_) => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unsupported file type LZH")),
-      Format::Tar(_) => Ok(Decomp::Tar(r))
+      Format::Tar(_) => Ok(Decomp::Tar(BufReader::with_capacity(131072,r)))
     }
   }
 }
@@ -121,14 +122,14 @@ impl<R: Read> Decomp<R> {
 ///
 /// This is a write based compressor 
 pub enum Comp<W: Write> {
-  Bzip2(BzEn<W>),
-  Snap(SzEn<W>),
-  Gzip(GzEn<W>),
-  Brotli(BrEn<W>),
-  Zstd(DzEn<W>),
-  Lz4(LzEn<W>),
-  Xz(XzEn<W>),
-  Tar(W)
+  Bzip2(BzEn<BufWriter<W>>),
+  Snap(SzEn<BufWriter<W>>),
+  Gzip(GzEn<BufWriter<W>>),
+  Brotli(BrEn<BufWriter<W>>),
+  Zstd(DzEn<BufWriter<W>>),
+  Lz4(LzEn<BufWriter<W>>),
+  Xz(XzEn<BufWriter<W>>),
+  Tar(BufWriter<W>)
 }
 impl<W: Write> Write for Comp<W> {
 
@@ -161,7 +162,7 @@ impl<W: Write> Comp<W> {
   ///
   /// This signals for the decompressor to attempt to finish
   /// it's stream by writing any final data out
-  pub fn finish(self) -> Result<W,String> {
+  pub fn finish(self) -> Result<BufWriter<W>,String> {
     match self {
       Comp::Gzip(x) => match x.finish() {
         Ok(x) => Ok(x),
@@ -209,17 +210,17 @@ impl<W: Write> Comp<W> {
   ///you combine many files _into_ a tar ball. 
   pub fn from_format(f: Format, w: W) -> io::Result<Comp<W>> {
     match f {
-      Format::Bzip2(q) => Ok(Comp::Bzip2(BzEn::new(w, q.into_bz()))),
-      Format::Gzip(q) => Ok(Comp::Gzip(GzEn::new(w, q.into_gz()))),
-      Format::Snappy(_) => Ok(Comp::Snap(SzEn::new(w))),
-      Format::Brotli(q) => Ok(Comp::Brotli((q.into_brotli())(w))),
-      Format::Zstd(q) => Ok(Comp::Zstd((q.into_zstd())(w)?)),
-      Format::Lz4(q) => Ok(Comp::Lz4((q.into_lz4()(w)?))),
-      Format::Xz(q) => Ok(Comp::Xz(XzEn::new(w,q.into_xz()))),
+      Format::Bzip2(q) => Ok(Comp::Bzip2(BzEn::new(BufWriter::with_capacity(131072,w), q.into_bz()))),
+      Format::Gzip(q) => Ok(Comp::Gzip(GzEn::new(BufWriter::with_capacity(131072,w), q.into_gz()))),
+      Format::Snappy(_) => Ok(Comp::Snap(SzEn::new(BufWriter::with_capacity(131072,w)))),
+      Format::Brotli(q) => Ok(Comp::Brotli((q.into_brotli())(BufWriter::with_capacity(131072,w)))),
+      Format::Zstd(q) => Ok(Comp::Zstd((q.into_zstd())(BufWriter::with_capacity(131072,w))?)),
+      Format::Lz4(q) => Ok(Comp::Lz4((q.into_lz4()(BufWriter::with_capacity(131072,w))?))),
+      Format::Xz(q) => Ok(Comp::Xz(XzEn::new(BufWriter::with_capacity(131072,w),q.into_xz()))),
       Format::Zip7(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type 7z")),
       Format::LZW(_) => Err(io::Error::new(io::ErrorKind::InvalidInput,"Unsupported file type LZW")),
       Format::LZH(_) => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unsupported file type LZH")),
-      Format::Tar(_) => Ok(Comp::Tar(w))
+      Format::Tar(_) => Ok(Comp::Tar(BufWriter::with_capacity(131072,w)))
     }
   }
 }

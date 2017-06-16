@@ -13,6 +13,8 @@ use super::{
   item_exists
 };
 
+use std::io::BufWriter;
+
 pub fn build<'a>() -> App<'static,'a> {
   SubCommand::with_name("tar")
     .about("Create a tar file with no compression")
@@ -45,7 +47,7 @@ pub fn get(x: &ArgMatches) -> Operation {
       {
         let path = x.value_of("output").unwrap();
         match File::create(&path) {
-          Ok(x) => x,
+          Ok(x) => BufWriter::with_capacity(131072,x),
           Err(e) => {
             println!("Could not create output {}",&path);
             println!("Error {:?}",e);

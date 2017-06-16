@@ -32,7 +32,8 @@ pub use std::fs::{
 pub use std::io::{
   self,
   Write,
-  Read
+  Read,
+  BufWriter
 };
 
 extern crate car_compress; 
@@ -136,7 +137,7 @@ impl Operation {
   }
 
   /// Does compression
-  pub fn do_compress(self) -> Result<File,String> {
+  pub fn do_compress(self) -> Result<BufWriter<File>,String> {
     match self {
       Operation::Create(comp,items) => create::exec(comp,&items),
       _ => panic!("Cody you called compress on an extract/list op")

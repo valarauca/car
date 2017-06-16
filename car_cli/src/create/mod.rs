@@ -16,6 +16,8 @@ use super::{
   File
 };
 
+use std::io::BufWriter;
+
 extern crate walkdir;
 use self::walkdir::WalkDir;
 
@@ -129,7 +131,7 @@ fn building<W: Write>(c: Comp<W>, items: &[PathBuf]) -> io::Result<Comp<W>> {
   
 
 /// execute compressiong
-pub fn exec<W: Write>(x: Comp<W>, items: &[PathBuf]) -> Result<W,String> { 
+pub fn exec<W: Write>(x: Comp<W>, items: &[PathBuf]) -> Result<BufWriter<W>,String> { 
   let x = match building(x,items) {
     Ok(x) => x,
     Err(e) => {
