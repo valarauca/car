@@ -62,6 +62,7 @@ pub fn print_size(a: u64) -> String {
 
 fn fetch<'a>() -> ArgMatches<'a> {
   App::new("car")
+    .set_term_width(80)
     .author("Cody Laeder, <codylaeder@gmail.com>")
     .version("1.0")
     .about("Cody's Archive Reader, TAR compatible CLI tool")

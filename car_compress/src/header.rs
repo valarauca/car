@@ -307,8 +307,13 @@ fn what_format(x: &[u8]) -> Option<Format> {
     _ => { }
   };
   match &x[0..4] {
+    b"\x81\xCF\xB2\xCE" |
     b"\xCE\xB2\xCF\x81" => return Some(Format::Brotli(Quality::Default)),
+    b"\x18\x4D\x22\x04" |
     b"\x04\x22\x4D\x18" => return Some(Format::Lz4(Quality::Default)),
+    b"\x27\xB5\x2F\xFD" |
+    b"\xFD\x2F\xB5\x27" |
+    b"\x28\xB5\x2F\xFD" |
     b"\xFD\x2F\xB5\x28" => return Some(Format::Zstd(Quality::Default)),
     _ => { }
   };
