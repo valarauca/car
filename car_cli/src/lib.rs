@@ -158,7 +158,7 @@ impl Operation {
         &Operation::Extract(_, ref r, ref outdir, xattrs, perms) => {
           extract::exec( &mut e, r, outdir, xattrs, perms)?;
         },
-      _ => panic!("Cody you called do_read on an compress job")
+        _ => panic!("Cody you called do_read on an compress job")
       };
     }
     Ok(())
