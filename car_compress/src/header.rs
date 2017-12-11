@@ -279,11 +279,16 @@ impl Format {
     let _ = r.seek(SeekFrom::Start(0))?;
     let mut v = Vec::with_capacity(16);
     unsafe{ v.set_len(16) };
-    r.read_exact(v.as_mut_slice())?;
+    let input = r.read(v.as_mut_slice())?;
     let _ = r.seek(SeekFrom::Start(0))?;
+    unsafe { v.set_len(input) }
     match what_format(v.as_slice()) {
       Option::Some(f) => Ok(f),
-      Option::None => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unsupported file type"))
+      Option::None => {
+        let kind = io::ErrorKind::InvalidInput;
+        let msg = format!("Could not identify magic number {:?}", v.as_slice());
+        Err(io::Error::new(kind, msg))
+      }
     }
   }
 }
@@ -291,7 +296,7 @@ impl Format {
 /*
  * LOOK I WROTE A NICE PARSER TO DO THIS AND IT BROKE
  * BETWEEN STABLE-MSVC AND STABLE-GNU
- * SO YEAH IT IS RECURSIVE DECENT FUCK OFF
+ * SO YEAH IT IS RECURSIVE DECENT
  */
 fn what_format(x: &[u8]) -> Option<Format> {
   match &x[0..2] {
@@ -316,8 +321,10 @@ fn what_format(x: &[u8]) -> Option<Format> {
     b"\xCE\xB2\xCF\x81" => return Some(Format::Brotli(Quality::Default)),
     b"\x18\x4D\x22\x04" |
     b"\x04\x22\x4D\x18" => return Some(Format::Lz4(Quality::Default)),
-    b"\x27\xB5\x2F\xFD" |
-    b"\xFD\x2F\xB5\x27" |
+    b"\xB5\x28\xFD\x2F" | // Functionally _any_ block can start a zstd binary ball of joy
+    b"\x28\xB5\x2F\xFD" | // this is rarely poorly documented
+    b"\x27\xB5\x2F\xFD" | // 
+    b"\xFD\x2F\xB5\x27" | // I just add a new entry every time I see an error
     b"\x28\xB5\x2F\xFD" |
     b"\xFD\x2F\xB5\x28" => return Some(Format::Zstd(Quality::Default)),
     _ => { }
