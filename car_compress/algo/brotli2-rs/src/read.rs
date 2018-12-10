@@ -24,16 +24,16 @@ impl<R: Read> BrotliEncoder<R> {
     ///
     /// The `level` argument here is typically 0-9 with 6 being a good default.
     pub fn new(r: R, level: u32) -> BrotliEncoder<R> {
-        BrotliEncoder {
-            inner: bufread::BrotliEncoder::new(BufReader::new(r), level),
-        }
+        BrotliEncoder { inner: bufread::BrotliEncoder::new(BufReader::new(r), level) }
     }
 
     /// Configure the compression parameters of this encoder.
-    pub fn from_params( r: R, params: &CompressParams) -> BrotliEncoder<R> {
-        BrotliEncoder{
+    pub fn from_params(r: R, params: &CompressParams) -> BrotliEncoder<R> {
+        BrotliEncoder {
             inner: bufread::BrotliEncoder::from_params(
-                BufReader::with_capacity(params.get_lgwin_readable(),r), params)
+                BufReader::with_capacity(params.get_lgwin_readable(), r),
+                params,
+            ),
         }
     }
 
@@ -66,9 +66,7 @@ impl<R: Read> BrotliDecoder<R> {
     /// Create a new decompression stream, which will read compressed
     /// data from the given input stream and decompress it.
     pub fn new(r: R) -> BrotliDecoder<R> {
-        BrotliDecoder {
-            inner: bufread::BrotliDecoder::new(BufReader::new(r)),
-        }
+        BrotliDecoder { inner: bufread::BrotliDecoder::new(BufReader::new(r)) }
     }
 
     /// Acquires a reference to the underlying stream
@@ -150,7 +148,9 @@ mod tests {
 
         let mut d = BrotliDecoder::new(&result[..]);
         let mut data = Vec::with_capacity(m.len());
-        unsafe { data.set_len(m.len()); }
+        unsafe {
+            data.set_len(m.len());
+        }
         assert!(d.read(&mut data).unwrap() == m.len());
         assert!(data == &m[..]);
     }

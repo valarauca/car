@@ -203,14 +203,14 @@ mod test {
         let rdr = &mut b"foobar";
         let mut res = Vec::new();
         rdr.gz_encode(Compression::Default)
-           .deflate_encode(Compression::Default)
-           .zlib_encode(Compression::Default)
-           .zlib_decode()
-           .deflate_decode()
-           .gz_decode()
-           .unwrap()
-           .read_to_end(&mut res)
-           .unwrap();
+            .deflate_encode(Compression::Default)
+            .zlib_encode(Compression::Default)
+            .zlib_decode()
+            .deflate_decode()
+            .gz_decode()
+            .unwrap()
+            .read_to_end(&mut res)
+            .unwrap();
         assert_eq!(res, b"foobar");
     }
 }

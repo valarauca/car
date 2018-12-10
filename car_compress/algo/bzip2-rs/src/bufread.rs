@@ -76,7 +76,7 @@ impl<R: BufRead> BzEncoder<R> {
 impl<R: BufRead> Read for BzEncoder<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if self.done {
-            return Ok(0)
+            return Ok(0);
         }
         loop {
             let (read, consumed, eof, ret);
@@ -85,7 +85,7 @@ impl<R: BufRead> Read for BzEncoder<R> {
                 eof = input.is_empty();
                 let before_out = self.data.total_out();
                 let before_in = self.data.total_in();
-                let action = if eof {Action::Finish} else {Action::Run};
+                let action = if eof { Action::Finish } else { Action::Run };
                 ret = self.data.compress(input, buf, action);
                 read = (self.data.total_out() - before_out) as usize;
                 consumed = (self.data.total_in() - before_in) as usize;
@@ -100,12 +100,12 @@ impl<R: BufRead> Read for BzEncoder<R> {
             // need to keep asking for more data because if we return that 0
             // bytes of data have been read then it will be interpreted as EOF.
             if read == 0 && !eof && buf.len() > 0 {
-                continue
+                continue;
             }
             if ret == Status::StreamEnd {
                 self.done = true;
             }
-            return Ok(read)
+            return Ok(read);
         }
     }
 }
@@ -156,7 +156,7 @@ impl<R: BufRead> BzDecoder<R> {
 impl<R: BufRead> Read for BzDecoder<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if self.done {
-            return Ok(0)
+            return Ok(0);
         }
         loop {
             let (read, consumed, eof, ret);
@@ -171,15 +171,15 @@ impl<R: BufRead> Read for BzDecoder<R> {
             }
             self.obj.consume(consumed);
 
-            let ret = try!(ret.map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidInput, e)
-            }));
+            let ret = try!(ret.map_err(
+                |e| io::Error::new(io::ErrorKind::InvalidInput, e),
+            ));
             if ret == Status::StreamEnd {
                 self.done = true;
-                return Ok(read)
+                return Ok(read);
             }
             if read > 0 || eof || buf.len() == 0 {
-                return Ok(read)
+                return Ok(read);
             }
         }
     }

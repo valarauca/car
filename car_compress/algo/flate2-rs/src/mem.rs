@@ -148,16 +148,18 @@ impl Compress {
     pub fn new(level: Compression, zlib_header: bool) -> Compress {
         unsafe {
             let mut state: ffi::mz_stream = mem::zeroed();
-            let ret = ffi::mz_deflateInit2(&mut state,
-                                           level as c_int,
-                                           ffi::MZ_DEFLATED,
-                                           if zlib_header {
-                                               ffi::MZ_DEFAULT_WINDOW_BITS
-                                           } else {
-                                               -ffi::MZ_DEFAULT_WINDOW_BITS
-                                           },
-                                           9,
-                                           ffi::MZ_DEFAULT_STRATEGY);
+            let ret = ffi::mz_deflateInit2(
+                &mut state,
+                level as c_int,
+                ffi::MZ_DEFLATED,
+                if zlib_header {
+                    ffi::MZ_DEFAULT_WINDOW_BITS
+                } else {
+                    -ffi::MZ_DEFAULT_WINDOW_BITS
+                },
+                9,
+                ffi::MZ_DEFAULT_STRATEGY,
+            );
             debug_assert_eq!(ret, 0);
             Compress {
                 inner: Stream {
@@ -200,11 +202,7 @@ impl Compress {
     ///
     /// To learn how much data was consumed or how much output was produced, use
     /// the `total_in` and `total_out` functions before/after this is called.
-    pub fn compress(&mut self,
-                    input: &[u8],
-                    output: &mut [u8],
-                    flush: Flush)
-                    -> Status {
+    pub fn compress(&mut self, input: &[u8], output: &mut [u8], flush: Flush) -> Status {
         self.inner.raw.next_in = input.as_ptr() as *mut _;
         self.inner.raw.avail_in = input.len() as c_uint;
         self.inner.raw.next_out = output.as_mut_ptr();
@@ -214,10 +212,9 @@ impl Compress {
 
         // Unfortunately the total counters provided by zlib might be only
         // 32 bits wide and overflow while processing large amounts of data.
-        self.inner.total_in += (self.inner.raw.next_in as usize -
-                                input.as_ptr() as usize) as u64;
-        self.inner.total_out += (self.inner.raw.next_out as usize -
-                                 output.as_ptr() as usize) as u64;
+        self.inner.total_in += (self.inner.raw.next_in as usize - input.as_ptr() as usize) as u64;
+        self.inner.total_out += (self.inner.raw.next_out as usize - output.as_ptr() as usize) as
+            u64;
 
         match rc {
             ffi::MZ_OK => Status::Ok,
@@ -235,11 +232,7 @@ impl Compress {
     /// the vector provided or attempt to grow it, so space for the output must
     /// be reserved in the output vector by the caller before calling this
     /// function.
-    pub fn compress_vec(&mut self,
-                        input: &[u8],
-                        output: &mut Vec<u8>,
-                        flush: Flush)
-                        -> Status {
+    pub fn compress_vec(&mut self, input: &[u8], output: &mut Vec<u8>, flush: Flush) -> Status {
         let cap = output.capacity();
         let len = output.len();
 
@@ -251,7 +244,7 @@ impl Compress {
                 self.compress(input, out, flush)
             };
             output.set_len((self.total_out() - before) as usize + len);
-            return ret
+            return ret;
         }
     }
 }
@@ -264,12 +257,14 @@ impl Decompress {
     pub fn new(zlib_header: bool) -> Decompress {
         unsafe {
             let mut state: ffi::mz_stream = mem::zeroed();
-            let ret = ffi::mz_inflateInit2(&mut state,
-                                           if zlib_header {
-                                               ffi::MZ_DEFAULT_WINDOW_BITS
-                                           } else {
-                                               -ffi::MZ_DEFAULT_WINDOW_BITS
-                                           });
+            let ret = ffi::mz_inflateInit2(
+                &mut state,
+                if zlib_header {
+                    ffi::MZ_DEFAULT_WINDOW_BITS
+                } else {
+                    -ffi::MZ_DEFAULT_WINDOW_BITS
+                },
+            );
             debug_assert_eq!(ret, 0);
             Decompress {
                 inner: Stream {
@@ -308,11 +303,12 @@ impl Decompress {
     ///
     /// To learn how much data was consumed or how much output was produced, use
     /// the `total_in` and `total_out` functions before/after this is called.
-    pub fn decompress(&mut self,
-                      input: &[u8],
-                      output: &mut [u8],
-                      flush: Flush)
-                      -> Result<Status, DataError> {
+    pub fn decompress(
+        &mut self,
+        input: &[u8],
+        output: &mut [u8],
+        flush: Flush,
+    ) -> Result<Status, DataError> {
         self.inner.raw.next_in = input.as_ptr() as *mut u8;
         self.inner.raw.avail_in = input.len() as c_uint;
         self.inner.raw.next_out = output.as_mut_ptr();
@@ -322,10 +318,9 @@ impl Decompress {
 
         // Unfortunately the total counters provided by zlib might be only
         // 32 bits wide and overflow while processing large amounts of data.
-        self.inner.total_in += (self.inner.raw.next_in as usize -
-                                input.as_ptr() as usize) as u64;
-        self.inner.total_out += (self.inner.raw.next_out as usize -
-                                 output.as_ptr() as usize) as u64;
+        self.inner.total_in += (self.inner.raw.next_in as usize - input.as_ptr() as usize) as u64;
+        self.inner.total_out += (self.inner.raw.next_out as usize - output.as_ptr() as usize) as
+            u64;
 
         match rc {
             ffi::MZ_DATA_ERROR |
@@ -345,11 +340,12 @@ impl Decompress {
     /// the vector provided or attempt to grow it, so space for the output must
     /// be reserved in the output vector by the caller before calling this
     /// function.
-    pub fn decompress_vec(&mut self,
-                          input: &[u8],
-                          output: &mut Vec<u8>,
-                          flush: Flush)
-                          -> Result<Status, DataError> {
+    pub fn decompress_vec(
+        &mut self,
+        input: &[u8],
+        output: &mut Vec<u8>,
+        flush: Flush,
+    ) -> Result<Status, DataError> {
         let cap = output.capacity();
         let len = output.len();
 
@@ -361,7 +357,7 @@ impl Decompress {
                 self.decompress(input, out, flush)
             };
             output.set_len((self.total_out() - before) as usize + len);
-            return ret
+            return ret;
         }
     }
 
@@ -398,7 +394,9 @@ impl Decompress {
 }
 
 impl Error for DataError {
-    fn description(&self) -> &str { "deflate data error" }
+    fn description(&self) -> &str {
+        "deflate data error"
+    }
 }
 
 impl From<DataError> for io::Error {
@@ -442,24 +440,147 @@ mod tests {
     #[test]
     fn issue51() {
         let data = vec![
-            0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xb3, 0xc9,
-            0x28, 0xc9, 0xcd, 0xb1, 0xe3, 0xe5, 0xb2, 0xc9, 0x48, 0x4d, 0x4c, 0xb1,
-            0xb3, 0x29, 0xc9, 0x2c, 0xc9, 0x49, 0xb5, 0x33, 0x31, 0x30, 0x51, 0xf0,
-            0xcb, 0x2f, 0x51, 0x70, 0xcb, 0x2f, 0xcd, 0x4b, 0xb1, 0xd1, 0x87, 0x08,
-            0xda, 0xe8, 0x83, 0x95, 0x00, 0x95, 0x26, 0xe5, 0xa7, 0x54, 0x2a, 0x24,
-            0xa5, 0x27, 0xe7, 0xe7, 0xe4, 0x17, 0xd9, 0x2a, 0x95, 0x67, 0x64, 0x96,
-            0xa4, 0x2a, 0x81, 0x8c, 0x48, 0x4e, 0xcd, 0x2b, 0x49, 0x2d, 0xb2, 0xb3,
-            0xc9, 0x30, 0x44, 0x37, 0x01, 0x28, 0x62, 0xa3, 0x0f, 0x95, 0x06, 0xd9,
-            0x05, 0x54, 0x04, 0xe5, 0xe5, 0xa5, 0x67, 0xe6, 0x55, 0xe8, 0x1b, 0xea,
-            0x99, 0xe9, 0x19, 0x21, 0xab, 0xd0, 0x07, 0xd9, 0x01, 0x32, 0x53, 0x1f,
-            0xea, 0x3e, 0x00, 0x94, 0x85, 0xeb, 0xe4, 0xa8, 0x00, 0x00, 0x00
+            0x1f,
+            0x8b,
+            0x08,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x03,
+            0xb3,
+            0xc9,
+            0x28,
+            0xc9,
+            0xcd,
+            0xb1,
+            0xe3,
+            0xe5,
+            0xb2,
+            0xc9,
+            0x48,
+            0x4d,
+            0x4c,
+            0xb1,
+            0xb3,
+            0x29,
+            0xc9,
+            0x2c,
+            0xc9,
+            0x49,
+            0xb5,
+            0x33,
+            0x31,
+            0x30,
+            0x51,
+            0xf0,
+            0xcb,
+            0x2f,
+            0x51,
+            0x70,
+            0xcb,
+            0x2f,
+            0xcd,
+            0x4b,
+            0xb1,
+            0xd1,
+            0x87,
+            0x08,
+            0xda,
+            0xe8,
+            0x83,
+            0x95,
+            0x00,
+            0x95,
+            0x26,
+            0xe5,
+            0xa7,
+            0x54,
+            0x2a,
+            0x24,
+            0xa5,
+            0x27,
+            0xe7,
+            0xe7,
+            0xe4,
+            0x17,
+            0xd9,
+            0x2a,
+            0x95,
+            0x67,
+            0x64,
+            0x96,
+            0xa4,
+            0x2a,
+            0x81,
+            0x8c,
+            0x48,
+            0x4e,
+            0xcd,
+            0x2b,
+            0x49,
+            0x2d,
+            0xb2,
+            0xb3,
+            0xc9,
+            0x30,
+            0x44,
+            0x37,
+            0x01,
+            0x28,
+            0x62,
+            0xa3,
+            0x0f,
+            0x95,
+            0x06,
+            0xd9,
+            0x05,
+            0x54,
+            0x04,
+            0xe5,
+            0xe5,
+            0xa5,
+            0x67,
+            0xe6,
+            0x55,
+            0xe8,
+            0x1b,
+            0xea,
+            0x99,
+            0xe9,
+            0x19,
+            0x21,
+            0xab,
+            0xd0,
+            0x07,
+            0xd9,
+            0x01,
+            0x32,
+            0x53,
+            0x1f,
+            0xea,
+            0x3e,
+            0x00,
+            0x94,
+            0x85,
+            0xeb,
+            0xe4,
+            0xa8,
+            0x00,
+            0x00,
+            0x00,
         ];
 
-        let mut decoded = Vec::with_capacity(data.len()*2);
+        let mut decoded = Vec::with_capacity(data.len() * 2);
 
         let mut d = Decompress::new(false);
         // decompressed whole deflate stream
-        assert!(d.decompress_vec(&data[10..], &mut decoded, Flush::Finish).is_ok());
+        assert!(
+            d.decompress_vec(&data[10..], &mut decoded, Flush::Finish)
+                .is_ok()
+        );
 
         // decompress data that has nothing to do with the deflate stream (this
         // used to panic)
@@ -473,8 +594,12 @@ mod tests {
         let mut deflate = Vec::new();
 
         let comp = Compression::Default;
-        write::ZlibEncoder::new(&mut zlib, comp).write_all(string).unwrap();
-        write::DeflateEncoder::new(&mut deflate, comp).write_all(string).unwrap();
+        write::ZlibEncoder::new(&mut zlib, comp)
+            .write_all(string)
+            .unwrap();
+        write::DeflateEncoder::new(&mut deflate, comp)
+            .write_all(string)
+            .unwrap();
 
         let mut dst = [0; 1024];
         let mut decoder = Decompress::new(true);
@@ -483,7 +608,9 @@ mod tests {
         assert!(dst.starts_with(string));
 
         decoder.reset(false);
-        decoder.decompress(&deflate, &mut dst, Flush::Finish).unwrap();
+        decoder
+            .decompress(&deflate, &mut dst, Flush::Finish)
+            .unwrap();
         assert_eq!(decoder.total_out(), string.len() as u64);
         assert!(dst.starts_with(string));
     }

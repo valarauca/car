@@ -22,9 +22,7 @@ impl<R: Read> BzEncoder<R> {
     /// Create a new compression stream which will compress at the given level
     /// to read compress output to the give output stream.
     pub fn new(r: R, level: Compression) -> BzEncoder<R> {
-        BzEncoder {
-            inner: bufread::BzEncoder::new(BufReader::new(r), level),
-        }
+        BzEncoder { inner: bufread::BzEncoder::new(BufReader::new(r), level) }
     }
 
     /// Acquires a reference to the underlying stream
@@ -75,9 +73,7 @@ impl<R: Read> BzDecoder<R> {
     /// Create a new decompression stream, which will read compressed
     /// data from the given input stream and decompress it.
     pub fn new(r: R) -> BzDecoder<R> {
-        BzDecoder {
-            inner: bufread::BzDecoder::new(BufReader::new(r)),
-        }
+        BzDecoder { inner: bufread::BzDecoder::new(BufReader::new(r)) }
     }
 
     /// Acquires a reference to the underlying stream
@@ -176,7 +172,9 @@ mod tests {
 
         let mut d = BzDecoder::new(&result[..]);
         let mut data = Vec::with_capacity(m.len());
-        unsafe { data.set_len(m.len()); }
+        unsafe {
+            data.set_len(m.len());
+        }
         assert!(d.read(&mut data).unwrap() == m.len());
         assert!(data == &m[..]);
     }

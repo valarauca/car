@@ -6,9 +6,7 @@ use std::io::{self, Write, BufRead};
 
 fn main() {
     match (|| -> io::Result<()> {
-        let mut encoder = try!(
-            lzw::Encoder::new(lzw::LsbWriter::new(io::stdout()), 8)
-        );
+        let mut encoder = try!(lzw::Encoder::new(lzw::LsbWriter::new(io::stdout()), 8));
         let stdin = io::stdin();
         let mut stdin = stdin.lock();
         loop {
@@ -18,14 +16,16 @@ fn main() {
                 buf.len()
             };
             if len == 0 {
-                break
+                break;
             }
             stdin.consume(len);
         }
         Ok(())
     })() {
         Ok(()) => (),
-        Err(err) => { let _ = write!(io::stderr(), "{}", err); }
+        Err(err) => {
+            let _ = write!(io::stderr(), "{}", err);
+        }
     }
-    
+
 }

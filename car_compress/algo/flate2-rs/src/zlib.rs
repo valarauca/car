@@ -65,9 +65,7 @@ impl<W: Write> EncoderWriter<W> {
     /// When this encoder is dropped or unwrapped the final pieces of data will
     /// be flushed.
     pub fn new(w: W, level: ::Compression) -> EncoderWriter<W> {
-        EncoderWriter {
-            inner: zio::Writer::new(w, Compress::new(level, true)),
-        }
+        EncoderWriter { inner: zio::Writer::new(w, Compress::new(level, true)) }
     }
 
     /// Resets the state of this encoder entirely, swapping out the output
@@ -111,9 +109,7 @@ impl<R: Read> EncoderReader<R> {
     /// Creates a new encoder which will read uncompressed data from the given
     /// stream and emit the compressed stream.
     pub fn new(r: R, level: ::Compression) -> EncoderReader<R> {
-        EncoderReader {
-            inner: EncoderReaderBuf::new(BufReader::new(r), level),
-        }
+        EncoderReader { inner: EncoderReaderBuf::new(BufReader::new(r), level) }
     }
 
     /// Resets the state of this encoder entirely, swapping out the input
@@ -212,9 +208,7 @@ impl<R: Read> DecoderReader<R> {
     /// Note that the specified buffer will only be used up to its current
     /// length. The buffer's capacity will also not grow over time.
     pub fn new_with_buf(r: R, buf: Vec<u8>) -> DecoderReader<R> {
-        DecoderReader {
-            inner: DecoderReaderBuf::new(BufReader::with_buf(buf, r)),
-        }
+        DecoderReader { inner: DecoderReaderBuf::new(BufReader::with_buf(buf, r)) }
     }
 
     /// Resets the state of this decoder entirely, swapping out the input
@@ -333,9 +327,7 @@ impl<W: Write> DecoderWriter<W> {
     /// When this decoder is dropped or unwrapped the final pieces of data will
     /// be flushed.
     pub fn new(w: W) -> DecoderWriter<W> {
-        DecoderWriter {
-            inner: zio::Writer::new(w, Decompress::new(true)),
-        }
+        DecoderWriter { inner: zio::Writer::new(w, Decompress::new(true)) }
     }
 
     /// Resets the state of this decoder entirely, swapping out the output
@@ -416,7 +408,9 @@ mod tests {
     #[test]
     fn drop_writes() {
         let mut data = Vec::new();
-        EncoderWriter::new(&mut data, Default).write_all(b"foo").unwrap();
+        EncoderWriter::new(&mut data, Default)
+            .write_all(b"foo")
+            .unwrap();
         let mut r = DecoderReader::new(&data[..]);
         let mut ret = Vec::new();
         r.read_to_end(&mut ret).unwrap();
@@ -451,9 +445,9 @@ mod tests {
     #[test]
     fn roundtrip2() {
         let v = thread_rng()
-                    .gen_iter::<u8>()
-                    .take(1024 * 1024)
-                    .collect::<Vec<_>>();
+            .gen_iter::<u8>()
+            .take(1024 * 1024)
+            .collect::<Vec<_>>();
         let mut r = DecoderReader::new(EncoderReader::new(&v[..], Default));
         let mut ret = Vec::new();
         r.read_to_end(&mut ret).unwrap();
@@ -463,9 +457,9 @@ mod tests {
     #[test]
     fn roundtrip3() {
         let v = thread_rng()
-                    .gen_iter::<u8>()
-                    .take(1024 * 1024)
-                    .collect::<Vec<_>>();
+            .gen_iter::<u8>()
+            .take(1024 * 1024)
+            .collect::<Vec<_>>();
         let mut w = EncoderWriter::new(DecoderWriter::new(Vec::new()), Default);
         w.write_all(&v).unwrap();
         let w = w.finish().unwrap().finish().unwrap();
@@ -475,9 +469,9 @@ mod tests {
     #[test]
     fn reset_decoder() {
         let v = thread_rng()
-                    .gen_iter::<u8>()
-                    .take(1024 * 1024)
-                    .collect::<Vec<_>>();
+            .gen_iter::<u8>()
+            .take(1024 * 1024)
+            .collect::<Vec<_>>();
         let mut w = EncoderWriter::new(Vec::new(), Default);
         w.write_all(&v).unwrap();
         let data = w.finish().unwrap();

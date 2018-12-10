@@ -13,40 +13,59 @@ pub struct Writer<W: Write, D: Ops> {
 pub trait Ops {
     fn total_in(&self) -> u64;
     fn total_out(&self) -> u64;
-    fn run(&mut self, input: &[u8], output: &mut [u8], flush: Flush)
-           -> Result<Status, DataError>;
-    fn run_vec(&mut self, input: &[u8], output: &mut Vec<u8>, flush: Flush)
-               -> Result<Status, DataError>;
+    fn run(&mut self, input: &[u8], output: &mut [u8], flush: Flush) -> Result<Status, DataError>;
+    fn run_vec(
+        &mut self,
+        input: &[u8],
+        output: &mut Vec<u8>,
+        flush: Flush,
+    ) -> Result<Status, DataError>;
 }
 
 impl Ops for Compress {
-    fn total_in(&self) -> u64 { self.total_in() }
-    fn total_out(&self) -> u64 { self.total_out() }
-    fn run(&mut self, input: &[u8], output: &mut [u8], flush: Flush)
-           -> Result<Status, DataError> {
+    fn total_in(&self) -> u64 {
+        self.total_in()
+    }
+    fn total_out(&self) -> u64 {
+        self.total_out()
+    }
+    fn run(&mut self, input: &[u8], output: &mut [u8], flush: Flush) -> Result<Status, DataError> {
         Ok(self.compress(input, output, flush))
     }
-    fn run_vec(&mut self, input: &[u8], output: &mut Vec<u8>, flush: Flush)
-               -> Result<Status, DataError> {
+    fn run_vec(
+        &mut self,
+        input: &[u8],
+        output: &mut Vec<u8>,
+        flush: Flush,
+    ) -> Result<Status, DataError> {
         Ok(self.compress_vec(input, output, flush))
     }
 }
 
 impl Ops for Decompress {
-    fn total_in(&self) -> u64 { self.total_in() }
-    fn total_out(&self) -> u64 { self.total_out() }
-    fn run(&mut self, input: &[u8], output: &mut [u8], flush: Flush)
-           -> Result<Status, DataError> {
+    fn total_in(&self) -> u64 {
+        self.total_in()
+    }
+    fn total_out(&self) -> u64 {
+        self.total_out()
+    }
+    fn run(&mut self, input: &[u8], output: &mut [u8], flush: Flush) -> Result<Status, DataError> {
         self.decompress(input, output, flush)
     }
-    fn run_vec(&mut self, input: &[u8], output: &mut Vec<u8>, flush: Flush)
-               -> Result<Status, DataError> {
+    fn run_vec(
+        &mut self,
+        input: &[u8],
+        output: &mut Vec<u8>,
+        flush: Flush,
+    ) -> Result<Status, DataError> {
         self.decompress_vec(input, output, flush)
     }
 }
 
 pub fn read<R, D>(obj: &mut R, data: &mut D, dst: &mut [u8]) -> io::Result<usize>
-    where R: BufRead, D: Ops
+where
+    R: BufRead,
+    D: Ops,
 {
     loop {
         let (read, consumed, ret, eof);
@@ -55,7 +74,7 @@ pub fn read<R, D>(obj: &mut R, data: &mut D, dst: &mut [u8]) -> io::Result<usize
             eof = input.is_empty();
             let before_out = data.total_out();
             let before_in = data.total_in();
-            let flush = if eof {Flush::Finish} else {Flush::None};
+            let flush = if eof { Flush::Finish } else { Flush::None };
             ret = data.run(input, dst, flush);
             read = (data.total_out() - before_out) as usize;
             consumed = (data.total_in() - before_in) as usize;
@@ -68,15 +87,17 @@ pub fn read<R, D>(obj: &mut R, data: &mut D, dst: &mut [u8]) -> io::Result<usize
             // return that 0 bytes of data have been read then it will
             // be interpreted as EOF.
             Ok(Status::Ok) |
-            Ok(Status::BufError) if read == 0 && !eof && dst.len() > 0 => {
-                continue
-            }
+            Ok(Status::BufError) if read == 0 && !eof && dst.len() > 0 => continue,
             Ok(Status::Ok) |
             Ok(Status::BufError) |
             Ok(Status::StreamEnd) => return Ok(read),
 
-            Err(..) => return Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                                 "corrupt deflate stream"))
+            Err(..) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "corrupt deflate stream",
+                ))
+            }
         }
     }
 }
@@ -97,7 +118,7 @@ impl<W: Write, D: Ops> Writer<W, D> {
             let before = self.data.total_out();
             try!(self.data.run_vec(&[], &mut self.buf, Flush::Finish));
             if before == self.data.total_out() {
-                return Ok(())
+                return Ok(());
             }
         }
     }
@@ -144,16 +165,18 @@ impl<W: Write, D: Ops> Write for Writer<W, D> {
             let written = (self.data.total_in() - before_in) as usize;
 
             if buf.len() > 0 && written == 0 && ret.is_ok() {
-                continue
+                continue;
             }
             return match ret {
                 Ok(Status::Ok) |
                 Ok(Status::BufError) |
                 Ok(Status::StreamEnd) => Ok(written),
 
-                Err(..) => Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                              "corrupt deflate stream"))
-            }
+                Err(..) => Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "corrupt deflate stream",
+                )),
+            };
         }
     }
 
@@ -170,7 +193,7 @@ impl<W: Write, D: Ops> Write for Writer<W, D> {
             let before = self.data.total_out();
             self.data.run_vec(&[], &mut self.buf, Flush::None).unwrap();
             if before == self.data.total_out() {
-                break
+                break;
             }
         }
 

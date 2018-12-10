@@ -24,9 +24,7 @@ impl<R: Read> XzEncoder<R> {
     ///
     /// The `level` argument here is typically 0-9 with 6 being a good default.
     pub fn new(r: R, level: u32) -> XzEncoder<R> {
-        XzEncoder {
-            inner: bufread::XzEncoder::new(BufReader::new(r), level),
-        }
+        XzEncoder { inner: bufread::XzEncoder::new(BufReader::new(r), level) }
     }
 
     /// Creates a new encoder with a custom `Stream`.
@@ -34,9 +32,7 @@ impl<R: Read> XzEncoder<R> {
     /// The `Stream` can be pre-configured for multithreaded encoding, different
     /// compression options/tuning, etc.
     pub fn new_stream(r: R, stream: Stream) -> XzEncoder<R> {
-        XzEncoder {
-            inner: bufread::XzEncoder::new_stream(BufReader::new(r), stream),
-        }
+        XzEncoder { inner: bufread::XzEncoder::new_stream(BufReader::new(r), stream) }
     }
 
     /// Acquires a reference to the underlying stream
@@ -87,9 +83,7 @@ impl<R: Read> XzDecoder<R> {
     /// Create a new decompression stream, which will read compressed
     /// data from the given input stream and decompress it.
     pub fn new(r: R) -> XzDecoder<R> {
-        XzDecoder {
-            inner: bufread::XzDecoder::new(BufReader::new(r)),
-        }
+        XzDecoder { inner: bufread::XzDecoder::new(BufReader::new(r)) }
     }
 
     /// Creates a new decoder with a custom `Stream`.
@@ -97,9 +91,7 @@ impl<R: Read> XzDecoder<R> {
     /// The `Stream` can be pre-configured for various checks, different
     /// decompression options/tuning, etc.
     pub fn new_stream(r: R, stream: Stream) -> XzDecoder<R> {
-        XzDecoder {
-            inner: bufread::XzDecoder::new_stream(BufReader::new(r), stream),
-        }
+        XzDecoder { inner: bufread::XzDecoder::new_stream(BufReader::new(r), stream) }
     }
 
     /// Acquires a reference to the underlying stream
@@ -197,7 +189,9 @@ mod tests {
 
         let mut d = XzDecoder::new(&result[..]);
         let mut data = Vec::with_capacity(m.len());
-        unsafe { data.set_len(m.len()); }
+        unsafe {
+            data.set_len(m.len());
+        }
         assert!(d.read(&mut data).unwrap() == m.len());
         assert!(data == &m[..]);
     }

@@ -49,13 +49,13 @@ pub struct Filters {
 /// the amount of input will make `process` return `Error::Program`.
 #[derive(Copy, Clone)]
 pub enum Action {
-	/// Continue processing
-	///
+    /// Continue processing
+    ///
     /// When encoding, encode as much input as possible. Some internal buffering
     /// will probably be done (depends on the filter chain in use), which causes
     /// latency: the input used won't usually be decodeable from the output of
     /// the same `process` call.
-	///
+    ///
     /// When decoding, decode as much input as possible and produce as much
     /// output as possible.
     Run = lzma_sys::LZMA_RUN as isize,
@@ -186,7 +186,8 @@ pub enum Error {
 }
 
 /// Possible integrity checks that can be part of a .xz stream.
-#[allow(missing_docs)] // self explanatory mostly
+#[allow(missing_docs)]
+// self explanatory mostly
 #[derive(Copy, Clone)]
 pub enum Check {
     None = lzma_sys::LZMA_CHECK_NONE as isize,
@@ -275,9 +276,11 @@ impl Stream {
     pub fn new_easy_encoder(preset: u32, check: Check) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(lzma_sys::lzma_easy_encoder(&mut init.raw,
-                                                 preset,
-                                                 check as lzma_sys::lzma_check)));
+            try!(cvt(lzma_sys::lzma_easy_encoder(
+                &mut init.raw,
+                preset,
+                check as lzma_sys::lzma_check,
+            )));
             Ok(init)
         }
     }
@@ -298,7 +301,9 @@ impl Stream {
     pub fn new_lzma_encoder(options: &LzmaOptions) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(lzma_sys::lzma_alone_encoder(&mut init.raw, &options.raw)));
+            try!(cvt(
+                lzma_sys::lzma_alone_encoder(&mut init.raw, &options.raw),
+            ));
             Ok(init)
         }
     }
@@ -307,13 +312,14 @@ impl Stream {
     ///
     /// This function is similar to `new_easy_encoder` but a custom filter chain
     /// is specified.
-    pub fn new_stream_encoder(filters: &Filters,
-                              check: Check) -> Result<Stream, Error> {
+    pub fn new_stream_encoder(filters: &Filters, check: Check) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(lzma_sys::lzma_stream_encoder(&mut init.raw,
-                                                   filters.inner.as_ptr(),
-                                                   check as lzma_sys::lzma_check)));
+            try!(cvt(lzma_sys::lzma_stream_encoder(
+                &mut init.raw,
+                filters.inner.as_ptr(),
+                check as lzma_sys::lzma_check,
+            )));
             Ok(init)
         }
     }
@@ -323,13 +329,14 @@ impl Stream {
     /// The maximum memory usage can be specified along with flags such as
     /// `TELL_ANY_CHECK`, `TELL_NO_CHECK`, `TELL_UNSUPPORTED_CHECK`,
     /// `TELL_IGNORE_CHECK`, or `CONCATENATED`.
-    pub fn new_stream_decoder(memlimit: u64,
-                              flags: u32) -> Result<Stream, Error> {
+    pub fn new_stream_decoder(memlimit: u64, flags: u32) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(lzma_sys::lzma_stream_decoder(&mut init.raw,
-                                                   memlimit,
-                                                   flags)));
+            try!(cvt(lzma_sys::lzma_stream_decoder(
+                &mut init.raw,
+                memlimit,
+                flags,
+            )));
             Ok(init)
         }
     }
@@ -340,8 +347,7 @@ impl Stream {
     pub fn new_lzma_decoder(memlimit: u64) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(lzma_sys::lzma_alone_decoder(&mut init.raw,
-                                                  memlimit)));
+            try!(cvt(lzma_sys::lzma_alone_decoder(&mut init.raw, memlimit)));
             Ok(init)
         }
     }
@@ -351,9 +357,9 @@ impl Stream {
     pub fn new_auto_decoder(memlimit: u64, flags: u32) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(lzma_sys::lzma_auto_decoder(&mut init.raw,
-                                                 memlimit,
-                                                 flags)));
+            try!(cvt(
+                lzma_sys::lzma_auto_decoder(&mut init.raw, memlimit, flags),
+            ));
             Ok(init)
         }
     }
@@ -363,18 +369,18 @@ impl Stream {
     /// This will perform the appropriate encoding or decoding operation
     /// depending on the kind of underlying stream. Documentation for the
     /// various `action` arguments can be found on the respective variants.
-    pub fn process(&mut self,
-                   input: &[u8],
-                   output: &mut [u8],
-                   action: Action) -> Result<Status, Error> {
+    pub fn process(
+        &mut self,
+        input: &[u8],
+        output: &mut [u8],
+        action: Action,
+    ) -> Result<Status, Error> {
         self.raw.next_in = input.as_ptr();
         self.raw.avail_in = input.len();
         self.raw.next_out = output.as_mut_ptr();
         self.raw.avail_out = output.len();
         let action = action as lzma_sys::lzma_action;
-        unsafe {
-            cvt(lzma_sys::lzma_code(&mut self.raw, action))
-        }
+        unsafe { cvt(lzma_sys::lzma_code(&mut self.raw, action)) }
     }
 
     /// Performs the same data as `process`, but places output data in a `Vec`.
@@ -382,10 +388,12 @@ impl Stream {
     /// This function will use the extra capacity of `output` as a destination
     /// for bytes to be placed. The length of `output` will automatically get
     /// updated after the operation has completed.
-    pub fn process_vec(&mut self,
-                       input: &[u8],
-                       output: &mut Vec<u8>,
-                       action: Action) -> Result<Status, Error> {
+    pub fn process_vec(
+        &mut self,
+        input: &[u8],
+        output: &mut Vec<u8>,
+        action: Action,
+    ) -> Result<Status, Error> {
         let cap = output.capacity();
         let len = output.len();
 
@@ -397,7 +405,7 @@ impl Stream {
                 self.process(input, out, action)
             };
             output.set_len((self.total_out() - before) as usize + len);
-            return ret
+            return ret;
         }
     }
 
@@ -423,8 +431,7 @@ impl Stream {
     /// This can return `Error::MemLimit` if the new limit is too small or
     /// `Error::Program` if this stream doesn't take a memory limit.
     pub fn set_memlimit(&mut self, limit: u64) -> Result<(), Error> {
-        cvt(unsafe { lzma_sys::lzma_memlimit_set(&mut self.raw, limit) })
-            .map(|_| ())
+        cvt(unsafe { lzma_sys::lzma_memlimit_set(&mut self.raw, limit) }).map(|_| ())
     }
 }
 
@@ -569,9 +576,7 @@ impl LzmaOptions {
 impl Check {
     /// Test if this check is supported in this build of liblzma.
     pub fn is_supported(&self) -> bool {
-        let ret = unsafe {
-            lzma_sys::lzma_check_is_supported(*self as lzma_sys::lzma_check)
-        };
+        let ret = unsafe { lzma_sys::lzma_check_is_supported(*self as lzma_sys::lzma_check) };
         ret != 0
     }
 }
@@ -579,9 +584,7 @@ impl Check {
 impl MatchFinder {
     /// Test if this match finder is supported in this build of liblzma.
     pub fn is_supported(&self) -> bool {
-        let ret = unsafe {
-            lzma_sys::lzma_mf_is_supported(*self as lzma_sys::lzma_match_finder)
-        };
+        let ret = unsafe { lzma_sys::lzma_mf_is_supported(*self as lzma_sys::lzma_match_finder) };
         ret != 0
     }
 }
@@ -590,10 +593,12 @@ impl Filters {
     /// Creates a new filter chain with no filters.
     pub fn new() -> Filters {
         Filters {
-            inner: vec![lzma_sys::lzma_filter {
-                id: lzma_sys::LZMA_VLI_UNKNOWN,
-                options: 0 as *mut _,
-            }],
+            inner: vec![
+                lzma_sys::lzma_filter {
+                    id: lzma_sys::LZMA_VLI_UNKNOWN,
+                    options: 0 as *mut _,
+                },
+            ],
             lzma_opts: LinkedList::new(),
         }
     }
@@ -697,7 +702,7 @@ impl MtStreamBuilder {
                 filters: None,
             };
             init.raw.threads = 1;
-            return init
+            return init;
         }
     }
 
@@ -789,8 +794,9 @@ impl MtStreamBuilder {
     pub fn encoder(&self) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(lzma_sys::lzma_stream_encoder_mt(&mut init.raw,
-                                                      &self.raw)));
+            try!(cvt(
+                lzma_sys::lzma_stream_encoder_mt(&mut init.raw, &self.raw),
+            ));
             Ok(init)
         }
     }
@@ -821,7 +827,9 @@ impl From<Error> for io::Error {
 }
 
 impl error::Error for Error {
-    fn description(&self) -> &str { "lzma data error" }
+    fn description(&self) -> &str {
+        "lzma data error"
+    }
 }
 
 impl fmt::Display for Error {
@@ -837,4 +845,3 @@ impl Drop for Stream {
         }
     }
 }
-

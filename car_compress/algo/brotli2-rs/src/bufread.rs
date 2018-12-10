@@ -82,7 +82,7 @@ impl<R: BufRead> BrotliEncoder<R> {
 impl<R: BufRead> Read for BrotliEncoder<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if buf.len() == 0 {
-            return Ok(0)
+            return Ok(0);
         }
 
         match self.buf.read(buf) {
@@ -111,13 +111,13 @@ impl<R: BufRead> Read for BrotliEncoder<R> {
 
             if out.len() == 0 {
                 assert!(!self.done);
-                continue
+                continue;
             }
             let ret = try!(out.read(buf));
             if out.len() > 0 {
                 self.buf.get_mut().extend_from_slice(out);
             }
-            return Ok(ret)
+            return Ok(ret);
         }
     }
 }
@@ -154,7 +154,7 @@ impl<R: BufRead> BrotliDecoder<R> {
 impl<R: BufRead> Read for BrotliDecoder<R> {
     fn read(&mut self, mut buf: &mut [u8]) -> io::Result<usize> {
         if buf.len() == 0 {
-            return Ok(0)
+            return Ok(0);
         }
 
         loop {
@@ -168,16 +168,16 @@ impl<R: BufRead> Read for BrotliDecoder<R> {
             self.obj.consume(amt_in);
 
             if amt_in == 0 && status == Status::NeedInput {
-                return Err(io::Error::new(io::ErrorKind::Other,
-                                          "corrupted brotli stream"))
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "corrupted brotli stream",
+                ));
             }
             if amt_out == 0 && status != Status::Finished {
-                continue
+                continue;
             }
 
-            return Ok(amt_out)
+            return Ok(amt_out);
         }
     }
 }
-
-

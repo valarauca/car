@@ -56,4 +56,3 @@ pub enum Compression {
     /// Choose the default compression, a balance between speed and size.
     Default = 6,
 }
-

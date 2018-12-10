@@ -67,8 +67,7 @@ struct Args {
 }
 
 fn main() {
-    let args: Args =
-        Docopt::new(USAGE)
+    let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.version(Some(version())).decode())
         .unwrap_or_else(|e| e.exit());
     if let Err(err) = args.run() {
@@ -91,12 +90,11 @@ impl Args {
             }
         } else {
             for f in &self.arg_file {
-                let r =
-                    if self.flag_decompress {
-                        self.decompress_file(f)
-                    } else {
-                        self.compress_file(f)
-                    };
+                let r = if self.flag_decompress {
+                    self.decompress_file(f)
+                } else {
+                    self.compress_file(f)
+                };
                 if let Err(err) = r {
                     errln!("{}: {}", f, err);
                 }
@@ -140,7 +138,7 @@ impl Args {
                 if name.len() <= 3 || !name.ends_with(".sz") {
                     fail!("skipping uncompressed file");
                 }
-                old_path.with_file_name(format!("{}", &name[0..name.len()-3]))
+                old_path.with_file_name(format!("{}", &name[0..name.len() - 3]))
             }
         };
         if !self.flag_force && fs::metadata(&new_path).is_ok() {
@@ -157,11 +155,7 @@ impl Args {
         Ok(())
     }
 
-    fn compress<R: Read, W: Write>(
-        &self,
-        mut src: R,
-        mut dst: W,
-    ) -> Result<()> {
+    fn compress<R: Read, W: Write>(&self, mut src: R, mut dst: W) -> Result<()> {
         if self.flag_raw {
             // Read the entire src into memory and compress it.
             let mut buf = Vec::with_capacity(10 * (1 << 20));
@@ -175,11 +169,7 @@ impl Args {
         Ok(())
     }
 
-    fn decompress<R: Read, W: Write>(
-        &self,
-        mut src: R,
-        mut dst: W,
-    ) -> Result<()> {
+    fn decompress<R: Read, W: Write>(&self, mut src: R, mut dst: W) -> Result<()> {
         if self.flag_raw {
             // Read the entire src into memory and decompress it.
             let mut buf = Vec::with_capacity(10 * (1 << 20));
@@ -194,10 +184,11 @@ impl Args {
     }
 }
 
-fn copy_atime_mtime<P, Q>(
-    src: P,
-    dst: Q,
-) -> Result<()> where P: AsRef<Path>, Q: AsRef<Path> {
+fn copy_atime_mtime<P, Q>(src: P, dst: Q) -> Result<()>
+where
+    P: AsRef<Path>,
+    Q: AsRef<Path>,
+{
     let md = try!(fs::metadata(src));
     let last_access = FileTime::from_last_access_time(&md);
     let last_mod = FileTime::from_last_modification_time(&md);
@@ -212,8 +203,7 @@ fn version() -> String {
         option_env!("CARGO_PKG_VERSION_PATCH"),
     );
     match (maj, min, pat) {
-        (Some(maj), Some(min), Some(pat)) =>
-            format!("{}.{}.{}", maj, min, pat),
+        (Some(maj), Some(min), Some(pat)) => format!("{}.{}.{}", maj, min, pat),
         _ => "".to_owned(),
     }
 }

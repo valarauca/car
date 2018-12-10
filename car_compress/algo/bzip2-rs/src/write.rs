@@ -46,7 +46,7 @@ impl<W: Write> BzEncoder<W> {
             try!(self.dump());
             let res = self.data.compress_vec(&[], &mut self.buf, Action::Finish);
             if res == Ok(Status::StreamEnd) {
-                break
+                break;
             }
         }
         self.dump()
@@ -83,12 +83,13 @@ impl<W: Write> Write for BzEncoder<W> {
             try!(self.dump());
 
             let total_in = self.total_in();
-            self.data.compress_vec(data, &mut self.buf, Action::Run)
+            self.data
+                .compress_vec(data, &mut self.buf, Action::Run)
                 .unwrap();
             let written = (self.total_in() - total_in) as usize;
 
             if written > 0 || data.len() == 0 {
-                return Ok(written)
+                return Ok(written);
             }
         }
     }
@@ -97,11 +98,12 @@ impl<W: Write> Write for BzEncoder<W> {
         loop {
             try!(self.dump());
             let before = self.total_out();
-            self.data.compress_vec(&[], &mut self.buf, Action::Flush)
+            self.data
+                .compress_vec(&[], &mut self.buf, Action::Flush)
                 .unwrap();
 
             if before == self.total_out() {
-                break
+                break;
             }
         }
         self.obj.as_mut().unwrap().flush()
@@ -168,7 +170,7 @@ impl<W: Write> BzDecoder<W> {
 impl<W: Write> Write for BzDecoder<W> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         if self.done {
-            return Ok(0)
+            return Ok(0);
         }
         loop {
             try!(self.dump());
@@ -177,15 +179,15 @@ impl<W: Write> Write for BzDecoder<W> {
             let res = self.data.decompress_vec(data, &mut self.buf);
             let written = (self.total_in() - before) as usize;
 
-            let res = try!(res.map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidInput, e)
-            }));
+            let res = try!(res.map_err(
+                |e| io::Error::new(io::ErrorKind::InvalidInput, e),
+            ));
 
             if res == Status::StreamEnd {
                 self.done = true;
             }
             if written > 0 || data.len() == 0 || self.done {
-                return Ok(written)
+                return Ok(written);
             }
         }
     }

@@ -61,7 +61,6 @@ define_bit_readers!{
 }
 
 impl BitReader for LsbReader {
-
     fn read_bits(&mut self, mut buf: &[u8], n: u8) -> Bits {
         if n > 16 {
             // This is a logic error the program should have prevented this
@@ -75,7 +74,7 @@ impl BitReader for LsbReader {
                 buf = &buf[1..];
                 byte
             } else {
-                return Bits::None(consumed)
+                return Bits::None(consumed);
             };
             self.acc |= (byte as u32) << self.bits;
             self.bits += 8;
@@ -86,11 +85,9 @@ impl BitReader for LsbReader {
         self.bits -= n;
         Bits::Some(consumed, res as u16)
     }
-
 }
 
 impl BitReader for MsbReader {
-
     fn read_bits(&mut self, mut buf: &[u8], n: u8) -> Bits {
         if n > 16 {
             // This is a logic error the program should have prevented this
@@ -104,7 +101,7 @@ impl BitReader for MsbReader {
                 buf = &buf[1..];
                 byte
             } else {
-                return Bits::None(consumed)
+                return Bits::None(consumed);
             };
             self.acc |= (byte as u32) << (24 - self.bits);
             self.bits += 8;
@@ -177,7 +174,6 @@ define_bit_writers!{
 }
 
 impl<W: Write> BitWriter for LsbWriter<W> {
-
     fn write_bits(&mut self, v: u16, n: u8) -> io::Result<()> {
         self.acc |= (v as u32) << self.bits;
         self.bits += n;
@@ -189,11 +185,9 @@ impl<W: Write> BitWriter for LsbWriter<W> {
         }
         Ok(())
     }
-
 }
 
 impl<W: Write> BitWriter for MsbWriter<W> {
-
     fn write_bits(&mut self, v: u16, n: u8) -> io::Result<()> {
         self.acc |= (v as u32) << (32 - n - self.bits);
         self.bits += n;
@@ -205,7 +199,6 @@ impl<W: Write> BitWriter for MsbWriter<W> {
         }
         Ok(())
     }
-
 }
 
 #[cfg(test)]
@@ -226,7 +219,7 @@ mod test {
         {
             let mut writer = super::LsbWriter::new(&mut compressed_data);
             for &datum in expanded_data.iter() {
-                let _  = writer.write_bits(datum, 10);
+                let _ = writer.write_bits(datum, 10);
             }
         }
         assert_eq!(&data[..], &compressed_data[..])

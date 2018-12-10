@@ -52,7 +52,7 @@ impl<W: Write> XzEncoder<W> {
             try!(self.dump());
             let res = try!(self.data.process_vec(&[], &mut self.buf, Action::Finish));
             if res == Status::StreamEnd {
-                break
+                break;
             }
         }
         self.dump()
@@ -89,12 +89,13 @@ impl<W: Write> Write for XzEncoder<W> {
             try!(self.dump());
 
             let total_in = self.total_in();
-            self.data.process_vec(data, &mut self.buf, Action::Run)
+            self.data
+                .process_vec(data, &mut self.buf, Action::Run)
                 .unwrap();
             let written = (self.total_in() - total_in) as usize;
 
             if written > 0 || data.len() == 0 {
-                return Ok(written)
+                return Ok(written);
             }
         }
     }
@@ -102,10 +103,11 @@ impl<W: Write> Write for XzEncoder<W> {
     fn flush(&mut self) -> io::Result<()> {
         loop {
             try!(self.dump());
-            let status = self.data.process_vec(&[], &mut self.buf,
-                                               Action::FullFlush).unwrap();
+            let status = self.data
+                .process_vec(&[], &mut self.buf, Action::FullFlush)
+                .unwrap();
             if status == Status::StreamEnd {
-                break
+                break;
             }
         }
         self.obj.as_mut().unwrap().flush()
@@ -152,10 +154,9 @@ impl<W: Write> XzDecoder<W> {
     fn do_finish(&mut self) -> io::Result<()> {
         loop {
             try!(self.dump());
-            let res = try!(self.data.process_vec(&[], &mut self.buf,
-                                                 Action::Run));
+            let res = try!(self.data.process_vec(&[], &mut self.buf, Action::Run));
             if res == Status::StreamEnd {
-                break
+                break;
             }
 
         }
@@ -190,12 +191,11 @@ impl<W: Write> Write for XzDecoder<W> {
             try!(self.dump());
 
             let before = self.total_in();
-            let res = try!(self.data.process_vec(data, &mut self.buf,
-                                                 Action::Run));
+            let res = try!(self.data.process_vec(data, &mut self.buf, Action::Run));
             let written = (self.total_in() - before) as usize;
 
             if written > 0 || data.len() == 0 || res == Status::StreamEnd {
-                return Ok(written)
+                return Ok(written);
             }
         }
     }

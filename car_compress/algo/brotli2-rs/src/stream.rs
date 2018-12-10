@@ -32,7 +32,7 @@ unsafe impl Send for Compress {}
 unsafe impl Sync for Compress {}
 
 /// Parameters passed to various compression routines.
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct CompressParams {
     /// Compression mode.
     mode: u32,
@@ -48,7 +48,7 @@ pub struct CompressParams {
 
 /// Possible choices for modes of compression
 #[repr(isize)]
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum CompressMode {
     /// Default compression mode, the compressor does not know anything in
     /// advance about the properties of the input.
@@ -100,21 +100,25 @@ impl Decompress {
     ///
     /// If the input stream is not a valid brotli stream, then an error is
     /// returned.
-    pub fn decompress(&mut self,
-                      input: &mut &[u8],
-                      output: &mut &mut [u8]) -> Result<Status, Error> {
+    pub fn decompress(
+        &mut self,
+        input: &mut &[u8],
+        output: &mut &mut [u8],
+    ) -> Result<Status, Error> {
         let mut available_in = input.len();
         let mut next_in = input.as_ptr();
         let mut available_out = output.len();
         let mut next_out = output.as_mut_ptr();
         let mut total_out = 0;
         let r = unsafe {
-            brotli_sys::BrotliDecompressStream(&mut available_in,
-                                               &mut next_in,
-                                               &mut available_out,
-                                               &mut next_out,
-                                               &mut total_out,
-                                               self.state)
+            brotli_sys::BrotliDecompressStream(
+                &mut available_in,
+                &mut next_in,
+                &mut available_out,
+                &mut next_out,
+                &mut total_out,
+                self.state,
+            )
         };
         *input = &input[input.len() - available_in..];
         let out_len = output.len();
@@ -128,9 +132,11 @@ impl Decompress {
     /// This function is the same as `decompress` except that it will fill up
     /// the remaining capacity in a destination vector and update the length as
     /// necessary.
-    pub fn decompress_vec(&mut self,
-                          input: &mut &[u8],
-                          output: &mut Vec<u8>) -> Result<Status, Error> {
+    pub fn decompress_vec(
+        &mut self,
+        input: &mut &[u8],
+        output: &mut Vec<u8>,
+    ) -> Result<Status, Error> {
         let cap = output.capacity();
         let len = output.len();
 
@@ -142,7 +148,7 @@ impl Decompress {
                 (r, out.len())
             };
             output.set_len(cap - remaining);
-            return ret
+            return ret;
         }
     }
 
@@ -152,7 +158,7 @@ impl Decompress {
             brotli_sys::BROTLI_RESULT_SUCCESS => Ok(Status::Finished),
             brotli_sys::BROTLI_RESULT_NEEDS_MORE_INPUT => Ok(Status::NeedInput),
             brotli_sys::BROTLI_RESULT_NEEDS_MORE_OUTPUT => Ok(Status::NeedOutput),
-            n => panic!("unknown return code: {}", n)
+            n => panic!("unknown return code: {}", n),
         }
     }
 }
@@ -172,30 +178,23 @@ impl Drop for Decompress {
 /// second is empty.
 pub fn decompressed_size(data: &[u8]) -> Result<usize, Error> {
     let mut size = 0;
-    let ret = unsafe {
-        brotli_sys::BrotliDecompressedSize(data.len(),
-                                           data.as_ptr(),
-                                           &mut size)
-    };
-    if ret == 0 {
-        Err(Error(()))
-    } else {
-        Ok(size)
-    }
+    let ret = unsafe { brotli_sys::BrotliDecompressedSize(data.len(), data.as_ptr(), &mut size) };
+    if ret == 0 { Err(Error(())) } else { Ok(size) }
 }
 
 /// Decompress data in one go in memory.
 ///
 /// Decompresses the data in `input` into the `output` buffer. The `output`
 /// buffer is updated to point to the actual output slice if successful
-pub fn decompress_buf(input: &[u8],
-                      output: &mut &mut [u8]) -> Result<Status, Error> {
+pub fn decompress_buf(input: &[u8], output: &mut &mut [u8]) -> Result<Status, Error> {
     let mut size = output.len();
     let r = unsafe {
-        brotli_sys::BrotliDecompressBuffer(input.len(),
-                                           input.as_ptr(),
-                                           &mut size,
-                                           output.as_mut_ptr())
+        brotli_sys::BrotliDecompressBuffer(
+            input.len(),
+            input.as_ptr(),
+            &mut size,
+            output.as_mut_ptr(),
+        )
     };
     *output = &mut mem::replace(output, &mut [])[..size];
     Decompress::rc(r)
@@ -296,9 +295,7 @@ impl Compress {
     /// generate an error.
     pub fn copy_input(&mut self, input: &[u8]) {
         unsafe {
-            brotli_sys::BrotliEncoderCopyInputToRingBuffer(self.state,
-                                                           input.len(),
-                                                           input.as_ptr())
+            brotli_sys::BrotliEncoderCopyInputToRingBuffer(self.state, input.len(), input.as_ptr())
         }
     }
 
@@ -347,17 +344,13 @@ impl Compress {
     /// assert_roundtrip(b"");
     /// assert_roundtrip(&[6; 1024]);
     /// ```
-    pub fn compress(&mut self, last: bool, force_flush: bool)
-                    -> Result<&[u8], Error> {
+    pub fn compress(&mut self, last: bool, force_flush: bool) -> Result<&[u8], Error> {
         let mut size = 0;
         let mut ptr = 0 as *mut _;
         unsafe {
             let (last, flush) = (last as c_int, force_flush as c_int);
-            let r = brotli_sys::BrotliEncoderWriteData(self.state,
-                                                       last,
-                                                       flush,
-                                                       &mut size,
-                                                       &mut ptr);
+            let r =
+                brotli_sys::BrotliEncoderWriteData(self.state, last, flush, &mut size, &mut ptr);
             if r == 0 {
                 Err(Error(()))
             } else if size == 0 {
@@ -374,18 +367,26 @@ impl Compress {
     /// starts.
     pub fn set_params(&mut self, params: &CompressParams) {
         unsafe {
-            brotli_sys::BrotliEncoderSetParameter(self.state,
-                                                  brotli_sys::BROTLI_PARAM_MODE,
-                                                  params.mode);
-            brotli_sys::BrotliEncoderSetParameter(self.state,
-                                                  brotli_sys::BROTLI_PARAM_QUALITY,
-                                                  params.quality);
-            brotli_sys::BrotliEncoderSetParameter(self.state,
-                                                  brotli_sys::BROTLI_PARAM_LGWIN,
-                                                  params.lgwin);
-            brotli_sys::BrotliEncoderSetParameter(self.state,
-                                                  brotli_sys::BROTLI_PARAM_LGBLOCK,
-                                                  params.lgblock);
+            brotli_sys::BrotliEncoderSetParameter(
+                self.state,
+                brotli_sys::BROTLI_PARAM_MODE,
+                params.mode,
+            );
+            brotli_sys::BrotliEncoderSetParameter(
+                self.state,
+                brotli_sys::BROTLI_PARAM_QUALITY,
+                params.quality,
+            );
+            brotli_sys::BrotliEncoderSetParameter(
+                self.state,
+                brotli_sys::BROTLI_PARAM_LGWIN,
+                params.lgwin,
+            );
+            brotli_sys::BrotliEncoderSetParameter(
+                self.state,
+                brotli_sys::BROTLI_PARAM_LGBLOCK,
+                params.lgblock,
+            );
         }
     }
 }
@@ -405,25 +406,25 @@ impl Drop for Compress {
 ///
 /// If successful, the amount of compressed bytes are returned (the size of the
 /// `output` slice), and otherwise an error is returned.
-pub fn compress_buf(params: &CompressParams,
-                    input: &[u8],
-                    output: &mut &mut [u8]) -> Result<usize, Error> {
+pub fn compress_buf(
+    params: &CompressParams,
+    input: &[u8],
+    output: &mut &mut [u8],
+) -> Result<usize, Error> {
     let mut size = output.len();
     let r = unsafe {
-        brotli_sys::BrotliEncoderCompress(params.quality as c_int,
-                                          params.lgwin as c_int,
-                                          params.mode as brotli_sys::BrotliEncoderMode,
-                                          input.len(),
-                                          input.as_ptr(),
-                                          &mut size,
-                                          output.as_mut_ptr())
+        brotli_sys::BrotliEncoderCompress(
+            params.quality as c_int,
+            params.lgwin as c_int,
+            params.mode as brotli_sys::BrotliEncoderMode,
+            input.len(),
+            input.as_ptr(),
+            &mut size,
+            output.as_mut_ptr(),
+        )
     };
     *output = &mut mem::replace(output, &mut [])[..size];
-    if r == 0 {
-        Err(Error(()))
-    } else {
-        Ok(size)
-    }
+    if r == 0 { Err(Error(())) } else { Ok(size) }
 }
 
 impl CompressParams {
@@ -517,7 +518,8 @@ mod tests {
     #[test]
     fn decompress_error() {
         let mut d = Decompress::new();
-        d.decompress(&mut &[0; 1024][..], &mut &mut [0; 2048][..]).unwrap_err();
+        d.decompress(&mut &[0; 1024][..], &mut &mut [0; 2048][..])
+            .unwrap_err();
     }
 
     #[test]
@@ -554,8 +556,10 @@ mod tests {
 
         let mut d = Decompress::new();
         let mut dst = Vec::with_capacity(10);
-        assert_eq!(d.decompress_vec(&mut &data[..], &mut dst),
-                   Ok(Status::Finished));
+        assert_eq!(
+            d.decompress_vec(&mut &data[..], &mut dst),
+            Ok(Status::Finished)
+        );
         assert_eq!(&dst, b"hello!");
     }
 

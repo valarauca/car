@@ -6,9 +6,7 @@ use std::io::{self, Write, BufWriter, BufRead};
 
 fn main() {
     match (|| -> io::Result<()> {
-        let mut decoder = 
-            lzw::Decoder::new(lzw::LsbReader::new(), 8)
-        ;
+        let mut decoder = lzw::Decoder::new(lzw::LsbReader::new(), 8);
         let stdout = io::stdout();
         let mut stdout = BufWriter::new(stdout.lock());
         let stdin = io::stdin();
@@ -17,7 +15,7 @@ fn main() {
             let len = {
                 let buf = try!(stdin.fill_buf());
                 if buf.len() == 0 {
-                    break
+                    break;
                 }
                 let (len, bytes) = try!(decoder.decode_bytes(buf));
                 try!(stdout.write_all(bytes));
@@ -28,7 +26,9 @@ fn main() {
         Ok(())
     })() {
         Ok(()) => (),
-        Err(err) => { let _ = write!(io::stderr(), "{}", err); }
+        Err(err) => {
+            let _ = write!(io::stderr(), "{}", err);
+        }
     }
-    
+
 }

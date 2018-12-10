@@ -31,31 +31,38 @@ mod imp {
 
     pub const MZ_DEFAULT_WINDOW_BITS: c_int = 15;
 
-    pub unsafe extern fn mz_crc32(crc: c_ulong,
-                                  ptr: *const u8,
-                                  len: size_t) -> c_ulong {
+    pub unsafe extern "C" fn mz_crc32(crc: c_ulong, ptr: *const u8, len: size_t) -> c_ulong {
         z::crc32(crc, ptr, len as c_uint)
     }
 
     const ZLIB_VERSION: &'static str = "1.2.8\0";
 
-    pub unsafe extern fn mz_deflateInit2(stream: *mut mz_stream,
-                                         level: c_int,
-                                         method: c_int,
-                                         window_bits: c_int,
-                                         mem_level: c_int,
-                                         strategy: c_int) -> c_int {
-        z::deflateInit2_(stream, level, method, window_bits, mem_level,
-                         strategy,
-                         ZLIB_VERSION.as_ptr() as *const c_char,
-                         mem::size_of::<mz_stream>() as c_int)
+    pub unsafe extern "C" fn mz_deflateInit2(
+        stream: *mut mz_stream,
+        level: c_int,
+        method: c_int,
+        window_bits: c_int,
+        mem_level: c_int,
+        strategy: c_int,
+    ) -> c_int {
+        z::deflateInit2_(
+            stream,
+            level,
+            method,
+            window_bits,
+            mem_level,
+            strategy,
+            ZLIB_VERSION.as_ptr() as *const c_char,
+            mem::size_of::<mz_stream>() as c_int,
+        )
     }
-    pub unsafe extern fn mz_inflateInit2(stream: *mut mz_stream,
-                                         window_bits: c_int)
-                                         -> c_int {
-        z::inflateInit2_(stream, window_bits,
-                         ZLIB_VERSION.as_ptr() as *const c_char,
-                         mem::size_of::<mz_stream>() as c_int)
+    pub unsafe extern "C" fn mz_inflateInit2(stream: *mut mz_stream, window_bits: c_int) -> c_int {
+        z::inflateInit2_(
+            stream,
+            window_bits,
+            ZLIB_VERSION.as_ptr() as *const c_char,
+            mem::size_of::<mz_stream>() as c_int,
+        )
     }
 }
 

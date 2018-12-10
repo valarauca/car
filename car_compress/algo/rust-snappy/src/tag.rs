@@ -261,4 +261,3 @@ pub const TAG_LOOKUP_TABLE: [u16; 256] = [
     0x1040,
     0x2040,
 ];
-

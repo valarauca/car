@@ -73,11 +73,7 @@ impl Decoder {
     /// * Invalid compressed Snappy data was seen.
     /// * The total space required for decompression exceeds `2^32 - 1`.
     /// * `output` has length less than `decompress_len(input)`.
-    pub fn decompress(
-        &mut self,
-        input: &[u8],
-        output: &mut [u8],
-    ) -> Result<usize> {
+    pub fn decompress(&mut self, input: &[u8], output: &mut [u8]) -> Result<usize> {
         if input.is_empty() {
             return Err(Error::Empty);
         }
@@ -163,10 +159,7 @@ impl<'s, 'd> Decompress<'s, 'd> {
     ///
     /// `len` must be <=64.
     #[inline(always)]
-    fn read_literal(
-        &mut self,
-        len: usize,
-    ) -> Result<()> {
+    fn read_literal(&mut self, len: usize) -> Result<()> {
         debug_assert!(len <= 64);
         let mut len = len as u64;
         // As an optimization for the common case, if the literal length is
@@ -175,9 +168,7 @@ impl<'s, 'd> Decompress<'s, 'd> {
         //
         // We pick 16 bytes with the hope that it optimizes down to a 128 bit
         // load/store.
-        if len <= 16
-            && self.s + 16 <= self.src.len()
-            && self.d + 16 <= self.dst.len() {
+        if len <= 16 && self.s + 16 <= self.src.len() && self.d + 16 <= self.dst.len() {
             unsafe {
                 // SAFETY: We know both src and dst have at least 16 bytes of
                 // wiggle room after s/d, even if `len` is <16, so the copy is
@@ -213,8 +204,7 @@ impl<'s, 'd> Decompress<'s, 'd> {
         // If there's not enough buffer left to load or store this literal,
         // then the input is corrupt.
         // if self.s + len > self.src.len() || self.d + len > self.dst.len() {
-        if ((self.src.len() - self.s) as u64) < len
-            || ((self.dst.len() - self.d) as u64) < len {
+        if ((self.src.len() - self.s) as u64) < len || ((self.dst.len() - self.d) as u64) < len {
             return Err(Error::Literal {
                 len: len,
                 src_len: (self.src.len() - self.s) as u64,
@@ -236,10 +226,7 @@ impl<'s, 'd> Decompress<'s, 'd> {
     /// Reads a copy from `src` and writes the decompressed bytes to `dst`. `s`
     /// should point to the byte immediately proceding the copy tag byte.
     #[inline(always)]
-    fn read_copy(
-        &mut self,
-        tag_byte: u8,
-    ) -> Result<()> {
+    fn read_copy(&mut self, tag_byte: u8) -> Result<()> {
         // Find the copy offset and len, then advance the input past the copy.
         // The rest of this function deals with reading/writing to output only.
         let entry = TAG_LOOKUP_TABLE.entry(tag_byte);
@@ -373,7 +360,10 @@ impl Header {
                 max: MAX_INPUT_SIZE,
             });
         }
-        Ok(Header { len: header_len, decompress_len: decompress_len as usize })
+        Ok(Header {
+            len: header_len,
+            decompress_len: decompress_len as usize,
+        })
     }
 }
 
@@ -483,9 +473,6 @@ impl TagEntry {
 #[inline(always)]
 unsafe fn loadu32_le(data: *const u8) -> u32 {
     let mut n: u32 = 0;
-    ptr::copy_nonoverlapping(
-        data,
-        &mut n as *mut u32 as *mut u8,
-        4);
+    ptr::copy_nonoverlapping(data, &mut n as *mut u32 as *mut u8, 4);
     n.to_le()
 }

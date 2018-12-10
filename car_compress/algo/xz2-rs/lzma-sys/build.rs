@@ -28,27 +28,41 @@ fn main() {
 
     if target.contains("msvc") {
         println!("cargo:rustc-link-lib=static=liblzma");
-        let mut msbuild = gcc::windows_registry::find(&target, "msbuild")
-                              .expect("needs msbuild installed");
+        let mut msbuild =
+            gcc::windows_registry::find(&target, "msbuild").expect("needs msbuild installed");
         let build = dst.join("build");
         let _ = fs::remove_dir_all(&build);
         let _ = fs::remove_dir_all(dst.join("lib"));
         let _ = fs::remove_dir_all(dst.join("include"));
         cp_r(Path::new("xz-5.2.2"), &build);
 
-        run(msbuild.current_dir(build.join("windows"))
-                   .arg("liblzma.vcxproj")
-                   .arg("/p:Configuration=Release"));
+        run(
+            msbuild
+                .current_dir(build.join("windows"))
+                .arg("liblzma.vcxproj")
+                .arg("/p:Configuration=Release"),
+        );
         t!(fs::create_dir(dst.join("lib")));
         t!(fs::create_dir(dst.join("include")));
-        let platform = if target.contains("x86_64") {"X64"} else {"Win32"};
-        t!(fs::copy(build.join("windows/Release")
-                         .join(platform)
-                         .join("liblzma/liblzma.lib"),
-                    dst.join("lib/liblzma.lib")));
-        t!(fs::copy(build.join("src/liblzma/api/lzma.h"),
-                    dst.join("include/lzma.h")));
-        cp_r(&build.join("src/liblzma/api/lzma"), &dst.join("include/lzma"));
+        let platform = if target.contains("x86_64") {
+            "X64"
+        } else {
+            "Win32"
+        };
+        t!(fs::copy(
+            build.join("windows/Release").join(platform).join(
+                "liblzma/liblzma.lib",
+            ),
+            dst.join("lib/liblzma.lib"),
+        ));
+        t!(fs::copy(
+            build.join("src/liblzma/api/lzma.h"),
+            dst.join("include/lzma.h"),
+        ));
+        cp_r(
+            &build.join("src/liblzma/api/lzma"),
+            &dst.join("include/lzma"),
+        );
     } else {
         // Looks like xz-5.2.2's build system is super sensitive to mtimes, so
         // if we just blindly use what's on the filesystem it's likely to try to
@@ -73,11 +87,15 @@ fn main() {
             cflags.push(" ");
         }
         cmd.env("CC", compiler.path())
-           .env("CFLAGS", cflags)
-           .current_dir(&dst.join("build"))
-           .arg(src.join("xz-5.2.2/configure").to_str().unwrap()
-                   .replace("C:\\", "/c/")
-                   .replace("\\", "/"));
+            .env("CFLAGS", cflags)
+            .current_dir(&dst.join("build"))
+            .arg(
+                src.join("xz-5.2.2/configure")
+                    .to_str()
+                    .unwrap()
+                    .replace("C:\\", "/c/")
+                    .replace("\\", "/"),
+            );
         cmd.arg(format!("--prefix={}", sanitize_sh(&dst)));
         cmd.arg("--disable-doc");
         cmd.arg("--disable-lzma-links");
@@ -97,12 +115,14 @@ fn main() {
         }
 
         run(&mut cmd);
-        run(Command::new("make")
-                    .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
-                    .current_dir(&dst.join("build")));
-        run(Command::new("make")
-                    .arg("install")
-                    .current_dir(&dst.join("build/src/liblzma")));
+        run(
+            Command::new("make")
+                .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
+                .current_dir(&dst.join("build")),
+        );
+        run(Command::new("make").arg("install").current_dir(&dst.join(
+            "build/src/liblzma",
+        )));
     }
 }
 
@@ -143,10 +163,10 @@ fn sanitize_sh(path: &Path) -> String {
         let mut ch = s.chars();
         let drive = ch.next().unwrap_or('C');
         if ch.next() != Some(':') {
-            return None
+            return None;
         }
         if ch.next() != Some('/') {
-            return None
+            return None;
         }
         Some(format!("/{}/{}", drive, &s[drive.len_utf8() + 2..]))
     }

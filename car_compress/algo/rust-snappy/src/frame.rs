@@ -135,18 +135,17 @@ impl<W: Write> Write for Writer<W> {
         loop {
             let free = self.src.capacity() - self.src.len();
             // n is the number of bytes extracted from buf.
-            let n =
-                if buf.len() <= free {
-                    break;
-                } else if self.src.is_empty() {
-                    // If buf is bigger than our entire buffer then avoid
-                    // the indirection and write the buffer directly.
-                    try!(self.inner.as_mut().unwrap().write(buf))
-                } else {
-                    self.src.extend_from_slice(&buf[0..free]);
-                    try!(self.flush());
-                    free
-                };
+            let n = if buf.len() <= free {
+                break;
+            } else if self.src.is_empty() {
+                // If buf is bigger than our entire buffer then avoid
+                // the indirection and write the buffer directly.
+                try!(self.inner.as_mut().unwrap().write(buf))
+            } else {
+                self.src.extend_from_slice(&buf[0..free]);
+                try!(self.flush());
+                free
+            };
             buf = &buf[n..];
             total += n;
         }
@@ -364,8 +363,7 @@ impl<R: Read> Read for Reader<R> {
                             header: false,
                         });
                     }
-                    try!(self.dec.decompress(
-                        &self.src[0..sn], &mut self.dst[0..dn]));
+                    try!(self.dec.decompress(&self.src[0..sn], &mut self.dst[0..dn]));
                     let got_sum = crc32c_masked(&self.dst[0..dn]);
                     if expected_sum != got_sum {
                         fail!(Error::Checksum {

@@ -90,7 +90,7 @@ impl<R: BufRead> Read for XzEncoder<R> {
                 eof = input.is_empty();
                 let before_out = self.data.total_out();
                 let before_in = self.data.total_in();
-                let action = if eof {Action::Finish} else {Action::Run};
+                let action = if eof { Action::Finish } else { Action::Run };
                 ret = self.data.process(input, buf, action);
                 read = (self.data.total_out() - before_out) as usize;
                 consumed = (self.data.total_in() - before_in) as usize;
@@ -103,9 +103,9 @@ impl<R: BufRead> Read for XzEncoder<R> {
             // need to keep asking for more data because if we return that 0
             // bytes of data have been read then it will be interpreted as EOF.
             if read == 0 && !eof && buf.len() > 0 {
-                continue
+                continue;
             }
-            return Ok(read)
+            return Ok(read);
         }
     }
 }
@@ -123,7 +123,10 @@ impl<R: BufRead> XzDecoder<R> {
     /// The `Stream` can be pre-configured for various checks, different
     /// decompression options/tuning, etc.
     pub fn new_stream(r: R, stream: Stream) -> XzDecoder<R> {
-        XzDecoder { obj: r, data: stream }
+        XzDecoder {
+            obj: r,
+            data: stream,
+        }
     }
 
     /// Acquires a reference to the underlying stream
@@ -175,9 +178,8 @@ impl<R: BufRead> Read for XzDecoder<R> {
 
             try!(ret);
             if read > 0 || eof || buf.len() == 0 {
-                return Ok(read)
+                return Ok(read);
             }
         }
     }
 }
-
