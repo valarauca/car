@@ -1,5 +1,5 @@
 use ll;
-use ::parse_code;
+use parse_code;
 
 use std::io;
 
@@ -9,7 +9,9 @@ struct DecoderContext {
 
 impl Default for DecoderContext {
     fn default() -> Self {
-        DecoderContext { c: unsafe { ll::ZSTD_createDCtx() } }
+        DecoderContext {
+            c: unsafe { ll::ZSTD_createDCtx() },
+        }
     }
 }
 
@@ -47,17 +49,21 @@ impl Decompressor {
     ///
     /// Returns the number of bytes written, or an error if something happened
     /// (for instance if the destination buffer was too small).
-    pub fn decompress_to_buffer(&mut self, source: &[u8],
-                                destination: &mut [u8])
-                                -> io::Result<usize> {
+    pub fn decompress_to_buffer(
+        &mut self,
+        source: &[u8],
+        destination: &mut [u8],
+    ) -> io::Result<usize> {
         let code = unsafe {
-            ll::ZSTD_decompress_usingDict(self.context.c,
-                                          destination.as_mut_ptr(),
-                                          destination.len(),
-                                          source.as_ptr(),
-                                          source.len(),
-                                          self.dict.as_ptr(),
-                                          self.dict.len())
+            ll::ZSTD_decompress_usingDict(
+                self.context.c,
+                destination.as_mut_ptr(),
+                destination.len(),
+                source.as_ptr(),
+                source.len(),
+                self.dict.as_ptr(),
+                self.dict.len(),
+            )
         };
         parse_code(code)
     }
@@ -66,8 +72,11 @@ impl Decompressor {
     ///
     /// The decompressed data should be less than `capacity` bytes,
     /// or an error will be returned.
-    pub fn decompress(&mut self, data: &[u8], capacity: usize)
-                      -> io::Result<Vec<u8>> {
+    pub fn decompress(
+        &mut self,
+        data: &[u8],
+        capacity: usize,
+    ) -> io::Result<Vec<u8>> {
         let mut buffer = Vec::with_capacity(capacity);
         unsafe {
             buffer.set_len(capacity);

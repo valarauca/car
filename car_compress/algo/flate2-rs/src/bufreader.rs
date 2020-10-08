@@ -27,7 +27,7 @@ impl<R: Read> BufReader<R> {
 
     pub fn with_buf(buf: Vec<u8>, inner: R) -> BufReader<R> {
         BufReader {
-            inner: inner,
+            inner,
             buf: buf.into_boxed_slice(),
             pos: 0,
             cap: 0,
@@ -62,8 +62,8 @@ impl<R: Read> Read for BufReader<R> {
             return self.inner.read(buf);
         }
         let nread = {
-            let mut rem = try!(self.fill_buf());
-            try!(rem.read(buf))
+            let mut rem = self.fill_buf()?;
+            rem.read(buf)?
         };
         self.consume(nread);
         Ok(nread)
@@ -75,7 +75,7 @@ impl<R: Read> BufRead for BufReader<R> {
         // If we've reached the end of our internal buffer then we need to fetch
         // some more data from the underlying reader.
         if self.pos == self.cap {
-            self.cap = try!(self.inner.read(&mut self.buf));
+            self.cap = self.inner.read(&mut self.buf)?;
             self.pos = 0;
         }
         Ok(&self.buf[self.pos..self.cap])

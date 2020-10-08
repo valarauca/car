@@ -3,8 +3,8 @@
 use std::io::prelude::*;
 use std::io::{self, BufReader};
 
-use stream::CompressParams;
 use bufread;
+use stream::CompressParams;
 
 /// A compression stream which wraps an uncompressed stream of data. Compressed
 /// data will be read from the stream.
@@ -24,7 +24,9 @@ impl<R: Read> BrotliEncoder<R> {
     ///
     /// The `level` argument here is typically 0-9 with 6 being a good default.
     pub fn new(r: R, level: u32) -> BrotliEncoder<R> {
-        BrotliEncoder { inner: bufread::BrotliEncoder::new(BufReader::new(r), level) }
+        BrotliEncoder {
+            inner: bufread::BrotliEncoder::new(BufReader::new(r), level),
+        }
     }
 
     /// Configure the compression parameters of this encoder.
@@ -66,7 +68,9 @@ impl<R: Read> BrotliDecoder<R> {
     /// Create a new decompression stream, which will read compressed
     /// data from the given input stream and decompress it.
     pub fn new(r: R) -> BrotliDecoder<R> {
-        BrotliDecoder { inner: bufread::BrotliDecoder::new(BufReader::new(r)) }
+        BrotliDecoder {
+            inner: bufread::BrotliDecoder::new(BufReader::new(r)),
+        }
     }
 
     /// Acquires a reference to the underlying stream
@@ -96,10 +100,9 @@ impl<R: Read> Read for BrotliDecoder<R> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::prelude::*;
-    use read::{BrotliEncoder, BrotliDecoder};
     use rand::{thread_rng, Rng};
-
+    use read::{BrotliDecoder, BrotliEncoder};
+    use std::io::prelude::*;
 
     #[test]
     fn smoke() {

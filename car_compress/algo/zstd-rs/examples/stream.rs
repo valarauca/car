@@ -1,15 +1,17 @@
 extern crate zstd;
 
 use std::env;
-use std::str::FromStr;
 use std::io::{self, Write};
+use std::str::FromStr;
 
 fn main() {
     match env::args().skip(1).next() {
         None => {
-            writeln!(&mut io::stderr(),
-                     "Invalid option. Usage: `stream [-d|-1..-21]`")
-                .unwrap();
+            writeln!(
+                &mut io::stderr(),
+                "Invalid option. Usage: `stream [-d|-1..-21]`"
+            )
+            .unwrap();
         }
         Some(ref option) if option == "-d" => decompress(),
         Some(ref option) => {
@@ -20,9 +22,11 @@ fn main() {
                 };
                 compress(level);
             } else {
-                writeln!(&mut io::stderr(),
-                         "Invalid option. Usage: `stream [-d|-1..-21]`")
-                    .unwrap();
+                writeln!(
+                    &mut io::stderr(),
+                    "Invalid option. Usage: `stream [-d|-1..-21]`"
+                )
+                .unwrap();
             }
         }
     }

@@ -1,9 +1,9 @@
 //! I/O streams for wrapping `BufRead` types as encoders/decoders
 
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 
-use stream::{Stream, Check, Action};
+use stream::{Action, Check, Stream};
 
 /// An xz encoder, or compressor.
 ///

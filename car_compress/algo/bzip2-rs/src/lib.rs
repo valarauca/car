@@ -33,11 +33,11 @@
 extern crate bzip2_sys as ffi;
 extern crate libc;
 #[cfg(test)]
-extern crate rand;
-#[cfg(test)]
 extern crate quickcheck;
+#[cfg(test)]
+extern crate rand;
 
-pub use mem::{Compress, Decompress, Action, Status, Error};
+pub use mem::{Action, Compress, Decompress, Error, Status};
 
 mod mem;
 

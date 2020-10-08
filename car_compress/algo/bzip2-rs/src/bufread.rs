@@ -1,9 +1,9 @@
 //! I/O streams for wrapping `BufRead` types as encoders/decoders
 
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 
-use {Compress, Decompress, Compression, Action, Status};
+use {Action, Compress, Compression, Decompress, Status};
 
 /// A bz2 encoder, or compressor.
 ///
@@ -81,7 +81,7 @@ impl<R: BufRead> Read for BzEncoder<R> {
         loop {
             let (read, consumed, eof, ret);
             {
-                let input = try!(self.obj.fill_buf());
+                let input = self.obj.fill_buf()?;
                 eof = input.is_empty();
                 let before_out = self.data.total_out();
                 let before_in = self.data.total_in();
@@ -99,7 +99,7 @@ impl<R: BufRead> Read for BzEncoder<R> {
             // If we haven't ready any data and we haven't hit EOF yet, then we
             // need to keep asking for more data because if we return that 0
             // bytes of data have been read then it will be interpreted as EOF.
-            if read == 0 && !eof && buf.len() > 0 {
+            if read == 0 && !eof && !buf.is_empty() {
                 continue;
             }
             if ret == Status::StreamEnd {
@@ -161,7 +161,7 @@ impl<R: BufRead> Read for BzDecoder<R> {
         loop {
             let (read, consumed, eof, ret);
             {
-                let input = try!(self.obj.fill_buf());
+                let input = self.obj.fill_buf()?;
                 eof = input.is_empty();
                 let before_out = self.data.total_out();
                 let before_in = self.data.total_in();
@@ -171,14 +171,12 @@ impl<R: BufRead> Read for BzDecoder<R> {
             }
             self.obj.consume(consumed);
 
-            let ret = try!(ret.map_err(
-                |e| io::Error::new(io::ErrorKind::InvalidInput, e),
-            ));
+            let ret = ret.map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
             if ret == Status::StreamEnd {
                 self.done = true;
                 return Ok(read);
             }
-            if read > 0 || eof || buf.len() == 0 {
+            if read > 0 || eof || buf.is_empty() {
                 return Ok(read);
             }
         }

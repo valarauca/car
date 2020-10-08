@@ -1,8 +1,8 @@
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 use std::mem;
 
-use {Decompress, Compress, Status, Flush, DataError};
+use {Compress, DataError, Decompress, Flush, Status};
 
 pub struct Writer<W: Write, D: Ops> {
     obj: Option<W>,
@@ -70,7 +70,7 @@ where
     loop {
         let (read, consumed, ret, eof);
         {
-            let input = try!(obj.fill_buf());
+            let input = obj.fill_buf()?;
             eof = input.is_empty();
             let before_out = data.total_out();
             let before_in = data.total_in();
@@ -86,11 +86,8 @@ where
             // then we need to keep asking for more data because if we
             // return that 0 bytes of data have been read then it will
             // be interpreted as EOF.
-            Ok(Status::Ok) |
-            Ok(Status::BufError) if read == 0 && !eof && dst.len() > 0 => continue,
-            Ok(Status::Ok) |
-            Ok(Status::BufError) |
-            Ok(Status::StreamEnd) => return Ok(read),
+            Ok(Status::Ok) | Ok(Status::BufError) if read == 0 && !eof && dst.len() > 0 => continue,
+            Ok(Status::Ok) | Ok(Status::BufError) | Ok(Status::StreamEnd) => return Ok(read),
 
             Err(..) => {
                 return Err(io::Error::new(
@@ -113,10 +110,10 @@ impl<W: Write, D: Ops> Writer<W, D> {
 
     pub fn finish(&mut self) -> io::Result<()> {
         loop {
-            try!(self.dump());
+            self.dump()?;
 
             let before = self.data.total_out();
-            try!(self.data.run_vec(&[], &mut self.buf, Flush::Finish));
+            self.data.run_vec(&[], &mut self.buf, Flush::Finish)?;
             if before == self.data.total_out() {
                 return Ok(());
             }
@@ -142,7 +139,7 @@ impl<W: Write, D: Ops> Writer<W, D> {
 
     fn dump(&mut self) -> io::Result<()> {
         if self.buf.len() > 0 {
-            try!(self.obj.as_mut().unwrap().write_all(&self.buf));
+            self.obj.as_mut().unwrap().write_all(&self.buf)?;
             self.buf.truncate(0);
         }
         Ok(())
@@ -158,7 +155,7 @@ impl<W: Write, D: Ops> Write for Writer<W, D> {
         // As a result we execute this in a loop to ensure that we try our
         // darndest to write the data.
         loop {
-            try!(self.dump());
+            self.dump()?;
 
             let before_in = self.data.total_in();
             let ret = self.data.run_vec(buf, &mut self.buf, Flush::None);
@@ -168,9 +165,7 @@ impl<W: Write, D: Ops> Write for Writer<W, D> {
                 continue;
             }
             return match ret {
-                Ok(Status::Ok) |
-                Ok(Status::BufError) |
-                Ok(Status::StreamEnd) => Ok(written),
+                Ok(Status::Ok) | Ok(Status::BufError) | Ok(Status::StreamEnd) => Ok(written),
 
                 Err(..) => Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
@@ -189,7 +184,7 @@ impl<W: Write, D: Ops> Write for Writer<W, D> {
         // give us a chunk of memory the same size as our own internal buffer,
         // at which point we assume it's reached the end.
         loop {
-            try!(self.dump());
+            self.dump()?;
             let before = self.data.total_out();
             self.data.run_vec(&[], &mut self.buf, Flush::None).unwrap();
             if before == self.data.total_out() {

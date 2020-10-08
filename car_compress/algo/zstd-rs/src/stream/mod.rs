@@ -6,11 +6,11 @@
 
 use std::io;
 
-mod encoder;
 mod decoder;
+mod encoder;
 
-pub use self::encoder::{AutoFinishEncoder, Encoder};
 pub use self::decoder::Decoder;
+pub use self::encoder::{AutoFinishEncoder, Encoder};
 
 /// Decompress from the given source as if using a `Decoder`.
 ///
@@ -25,8 +25,9 @@ pub fn decode_all<R: io::Read>(source: R) -> io::Result<Vec<u8>> {
 ///
 /// Decompressed data will be appended to `destination`.
 pub fn copy_decode<R, W>(source: R, mut destination: W) -> io::Result<()>
-    where R: io::Read,
-          W: io::Write
+where
+    R: io::Read,
+    W: io::Write,
 {
     let mut decoder = try!(Decoder::new(source));
     try!(io::copy(&mut decoder, &mut destination));
@@ -45,10 +46,14 @@ pub fn encode_all<R: io::Read>(source: R, level: i32) -> io::Result<Vec<u8>> {
 /// Compress all data from the given source as if using an `Encoder`.
 ///
 /// Compressed data will be appended to `destination`.
-pub fn copy_encode<R, W>(mut source: R, destination: W, level: i32)
-                         -> io::Result<()>
-    where R: io::Read,
-          W: io::Write
+pub fn copy_encode<R, W>(
+    mut source: R,
+    destination: W,
+    level: i32,
+) -> io::Result<()>
+where
+    R: io::Read,
+    W: io::Write,
 {
     let mut encoder = try!(Encoder::new(destination, level));
     try!(io::copy(&mut source, &mut encoder));
@@ -58,9 +63,9 @@ pub fn copy_encode<R, W>(mut source: R, destination: W, level: i32)
 
 #[cfg(test)]
 mod tests {
-    use std::io;
-    use super::{Decoder, Encoder};
     use super::{copy_encode, decode_all, encode_all};
+    use super::{Decoder, Encoder};
+    use std::io;
 
     #[test]
     fn test_end_of_frame() {
@@ -82,7 +87,6 @@ mod tests {
 
     #[test]
     fn test_concatenated_frames() {
-
         let mut buffer = Vec::new();
         copy_encode(&b"foo"[..], &mut buffer, 1).unwrap();
         copy_encode(&b"bar"[..], &mut buffer, 2).unwrap();
@@ -115,10 +119,10 @@ mod tests {
         // I really hope this data is invalid...
         let data = &[1u8, 2u8, 3u8, 4u8, 5u8];
         let mut dec = Decoder::new(&data[..]).unwrap();
-        assert_eq!(dec.read_to_end(&mut Vec::new())
-                       .err()
-                       .map(|e| e.kind()),
-                   Some(io::ErrorKind::Other));
+        assert_eq!(
+            dec.read_to_end(&mut Vec::new()).err().map(|e| e.kind()),
+            Some(io::ErrorKind::Other)
+        );
     }
 
     #[test]
@@ -133,10 +137,10 @@ mod tests {
         compressed.truncate(half_size);
 
         let mut dec = Decoder::new(&compressed[..]).unwrap();
-        assert_eq!(dec.read_to_end(&mut Vec::new())
-                       .err()
-                       .map(|e| e.kind()),
-                   Some(io::ErrorKind::UnexpectedEof));
+        assert_eq!(
+            dec.read_to_end(&mut Vec::new()).err().map(|e| e.kind()),
+            Some(io::ErrorKind::UnexpectedEof)
+        );
     }
 
     #[test]
@@ -160,17 +164,21 @@ mod tests {
             let mut buffer = Vec::new();
             decoder.read_to_end(&mut buffer).unwrap();
 
-            assert!(target == buffer,
-                    "Error decompressing legacy version {}",
-                    version);
+            assert!(
+                target == buffer,
+                "Error decompressing legacy version {}",
+                version
+            );
         }
     }
 
     // Check that compressing+decompressing some data gives back the original
     fn test_full_cycle(input: &[u8], level: i32) {
-        ::test_cycle_unwrap(input,
-                            |data| encode_all(data, level),
-                            |data| decode_all(data));
+        ::test_cycle_unwrap(
+            input,
+            |data| encode_all(data, level),
+            |data| decode_all(data),
+        );
     }
 
     #[test]

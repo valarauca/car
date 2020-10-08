@@ -2,7 +2,7 @@ use quickcheck::{QuickCheck, StdGen, TestResult};
 #[cfg(feature = "cpp")]
 use snappy_cpp as cpp;
 
-use {Encoder, Decoder, Error, decompress_len};
+use {decompress_len, Decoder, Encoder, Error};
 
 // roundtrip is a macro that compresses the input, then decompresses the result
 // and compares it with the original input. If they are not equal, then the
@@ -11,7 +11,7 @@ macro_rules! roundtrip {
     ($data:expr) => {{
         let d = &$data[..];
         assert_eq!(d, &*depress(&press(d)));
-    }}
+    }};
 }
 
 // errored is a macro that tries to decompress the input and asserts that it
@@ -31,12 +31,14 @@ macro_rules! errored {
         };
         match Decoder::new().decompress(d, &mut buf) {
             Err(ref err) if err == &$err => {}
-            Err(ref err) => {
-                panic!("expected decompression to fail with {:?}, \
-                        but got {:?}", $err, err)
-            }
+            Err(ref err) => panic!(
+                "expected decompression to fail with {:?}, \
+                        but got {:?}",
+                $err, err
+            ),
             Ok(n) => {
-                panic!("\nexpected decompression to fail, but did not!
+                panic!(
+                    "\nexpected decompression to fail, but did not!
 original (len == {:?})
 ----------------------
 {:?}
@@ -44,10 +46,15 @@ original (len == {:?})
 decompressed (len == {:?})
 --------------------------
 {:?}
-", d.len(), d, n, buf);
+",
+                    d.len(),
+                    d,
+                    n,
+                    buf
+                );
             }
         }
-    }}
+    }};
 }
 
 // testtrip is a macro that defines a test that compresses the input, then
@@ -84,7 +91,8 @@ macro_rules! testtrip {
                 if rust == cpp {
                     return;
                 }
-                panic!("\ncompression results are not equal!
+                panic!(
+                    "\ncompression results are not equal!
 original (len == {:?})
 ----------------------
 {:?}
@@ -96,10 +104,17 @@ rust (len == {:?})
 cpp (len == {:?})
 -----------------
 {:?}
-", data.len(), data, rust.len(), rust, cpp.len(), cpp);
+",
+                    data.len(),
+                    data,
+                    rust.len(),
+                    rust,
+                    cpp.len(),
+                    cpp
+                );
             }
         }
-    }
+    };
 }
 
 // testcorrupt is a macro that defines a test that decompresses the input,
@@ -324,383 +339,30 @@ testerrored!(
 testtrip!(
     random1,
     &[
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        2,
-        0,
-        0,
-        0,
-        3,
-        0,
-        0,
-        0,
-        4,
-        0,
-        0,
-        0,
-        5,
-        0,
-        0,
-        1,
-        1,
-        0,
-        0,
-        1,
-        2,
-        0,
-        0,
-        2,
-        1,
-        0,
-        0,
-        2,
-        2,
-        0,
-        0,
-        0,
-        6,
-        0,
-        0,
-        3,
-        1,
-        0,
-        0,
-        0,
-        7,
-        0,
-        0,
-        1,
-        3,
-        0,
-        0,
-        0,
-        8,
-        0,
-        0,
-        2,
-        3,
-        0,
-        0,
-        0,
-        9,
-        0,
-        0,
-        1,
-        4,
-        0,
-        0,
-        1,
-        0,
-        0,
-        3,
-        0,
-        0,
-        1,
-        0,
-        1,
-        0,
-        0,
-        0,
-        10,
-        0,
-        0,
-        0,
-        0,
-        2,
-        4,
-        0,
-        0,
-        2,
-        0,
-        0,
-        3,
-        0,
-        1,
-        0,
-        0,
-        1,
-        5,
-        0,
-        0,
-        6,
-        0,
-        0,
-        0,
-        0,
-        11,
-        0,
-        0,
-        1,
-        6,
-        0,
-        0,
-        1,
-        7,
-        0,
-        0,
-        0,
-        12,
-        0,
-        0,
-        3,
-        2,
-        0,
-        0,
-        0,
-        13,
-        0,
-        0,
-        2,
-        5,
-        0,
-        0,
-        0,
-        3,
-        3,
-        0,
-        0,
-        0,
-        1,
-        8,
-        0,
-        0,
-        1,
-        0,
-        1,
-        0,
-        0,
-        0,
-        4,
-        1,
-        0,
-        0,
-        0,
-        0,
-        14,
-        0,
-        0,
-        0,
-        1,
-        9,
-        0,
-        0,
-        0,
-        1,
-        10,
-        0,
-        0,
-        0,
-        0,
-        1,
-        11,
-        0,
-        0,
-        0,
-        1,
-        0,
-        2,
-        0,
-        0,
-        0,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        5,
-        1,
-        0,
-        0,
-        0,
-        1,
-        2,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        2,
-        6,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        12,
-        0,
-        0,
-        0,
-        0,
-        0,
-        3,
-        4,
-        0,
-        0,
-        0,
-        0,
-        0,
-        7,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        3,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
+        0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 1, 1, 0, 0, 1, 2, 0,
+        0, 2, 1, 0, 0, 2, 2, 0, 0, 0, 6, 0, 0, 3, 1, 0, 0, 0, 7, 0, 0, 1, 3, 0, 0, 0, 8, 0, 0, 2,
+        3, 0, 0, 0, 9, 0, 0, 1, 4, 0, 0, 1, 0, 0, 3, 0, 0, 1, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 2, 4,
+        0, 0, 2, 0, 0, 3, 0, 1, 0, 0, 1, 5, 0, 0, 6, 0, 0, 0, 0, 11, 0, 0, 1, 6, 0, 0, 1, 7, 0, 0,
+        0, 12, 0, 0, 3, 2, 0, 0, 0, 13, 0, 0, 2, 5, 0, 0, 0, 3, 3, 0, 0, 0, 1, 8, 0, 0, 1, 0, 1, 0,
+        0, 0, 4, 1, 0, 0, 0, 0, 14, 0, 0, 0, 1, 9, 0, 0, 0, 1, 10, 0, 0, 0, 0, 1, 11, 0, 0, 0, 1,
+        0, 2, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 5, 1, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 2, 6, 0, 0, 0,
+        0, 0, 1, 12, 0, 0, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 1, 0, 3, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]
 );
 testtrip!(
     random2,
-    &[
-        10,
-        2,
-        14,
-        13,
-        0,
-        8,
-        2,
-        10,
-        2,
-        14,
-        13,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    ]
+    &[10, 2, 14, 13, 0, 8, 2, 10, 2, 14, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]
 );
 testtrip!(
     random3,
-    &[
-        0,
-        0,
-        0,
-        4,
-        1,
-        4,
-        0,
-        0,
-        0,
-        4,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    ]
+    &[0, 0, 0, 4, 1, 4, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]
 );
 testtrip!(
     random4,
     &[
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        2,
-        0,
-        0,
-        0,
-        3,
-        0,
-        0,
-        0,
-        4,
-        0,
-        0,
-        0,
-        5,
-        0,
-        0,
-        1,
-        1,
-        0,
-        0,
-        1,
-        2,
-        0,
-        0,
-        1,
-        3,
-        0,
-        0,
-        1,
-        4,
-        0,
-        0,
-        2,
-        1,
-        0,
-        0,
-        0,
-        4,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
+        0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 1, 1, 0, 0, 1, 2, 0,
+        0, 1, 3, 0, 0, 1, 4, 0, 0, 2, 1, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]
 );
 
@@ -779,8 +441,8 @@ fn depress(bytes: &[u8]) -> Vec<u8> {
 }
 
 fn frame_press(bytes: &[u8]) -> Vec<u8> {
-    use std::io::Write;
     use frame::Writer;
+    use std::io::Write;
 
     let mut wtr = Writer::new(vec![]);
     wtr.write_all(bytes).unwrap();
@@ -788,8 +450,8 @@ fn frame_press(bytes: &[u8]) -> Vec<u8> {
 }
 
 fn frame_depress(bytes: &[u8]) -> Vec<u8> {
-    use std::io::Read;
     use frame::Reader;
+    use std::io::Read;
 
     let mut buf = vec![];
     Reader::new(bytes).read_to_end(&mut buf).unwrap();

@@ -4,6 +4,7 @@ use std::error;
 use std::fmt;
 use std::io;
 use std::mem;
+use std::ptr::null_mut;
 use std::slice;
 
 use brotli_sys;
@@ -79,9 +80,9 @@ impl Decompress {
     /// data.
     pub fn new() -> Decompress {
         unsafe {
-            let state = brotli_sys::BrotliCreateState(None, None, 0 as *mut _);
+            let state = brotli_sys::BrotliCreateState(None, None, null_mut());
             assert!(!state.is_null());
-            Decompress { state: state }
+            Decompress { state }
         }
     }
 
@@ -142,13 +143,13 @@ impl Decompress {
 
         unsafe {
             let (ret, remaining) = {
-                let ptr = output.as_mut_ptr().offset(len as isize);
+                let ptr = output.as_mut_ptr().add(len);
                 let mut out = slice::from_raw_parts_mut(ptr, cap - len);
                 let r = self.decompress(input, &mut out);
                 (r, out.len())
             };
             output.set_len(cap - remaining);
-            return ret;
+            ret
         }
     }
 
@@ -179,7 +180,11 @@ impl Drop for Decompress {
 pub fn decompressed_size(data: &[u8]) -> Result<usize, Error> {
     let mut size = 0;
     let ret = unsafe { brotli_sys::BrotliDecompressedSize(data.len(), data.as_ptr(), &mut size) };
-    if ret == 0 { Err(Error(())) } else { Ok(size) }
+    if ret == 0 {
+        Err(Error(()))
+    } else {
+        Ok(size)
+    }
 }
 
 /// Decompress data in one go in memory.
@@ -204,10 +209,10 @@ impl Compress {
     /// Creates a new compressor ready to encode data into brotli
     pub fn new() -> Compress {
         unsafe {
-            let state = brotli_sys::BrotliEncoderCreateInstance(None, None, 0 as *mut _);
+            let state = brotli_sys::BrotliEncoderCreateInstance(None, None, null_mut());
             assert!(!state.is_null());
 
-            Compress { state: state }
+            Compress { state }
         }
     }
 
@@ -346,7 +351,7 @@ impl Compress {
     /// ```
     pub fn compress(&mut self, last: bool, force_flush: bool) -> Result<&[u8], Error> {
         let mut size = 0;
-        let mut ptr = 0 as *mut _;
+        let mut ptr = null_mut();
         unsafe {
             let (last, flush) = (last as c_int, force_flush as c_int);
             let r =
@@ -424,7 +429,11 @@ pub fn compress_buf(
         )
     };
     *output = &mut mem::replace(output, &mut [])[..size];
-    if r == 0 { Err(Error(())) } else { Ok(size) }
+    if r == 0 {
+        Err(Error(()))
+    } else {
+        Ok(size)
+    }
 }
 
 impl CompressParams {
@@ -479,7 +488,7 @@ impl CompressParams {
     /// Get the native lgblock size
     #[inline]
     pub fn get_lgblock(&self) -> u32 {
-        self.lgblock.clone()
+        self.lgblock
     }
     /// Get the current window size
     #[inline]
@@ -489,12 +498,13 @@ impl CompressParams {
     /// Get the native lgwin value
     #[inline]
     pub fn get_lgwin(&self) -> u32 {
-        self.lgwin.clone()
+        self.lgwin
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[allow(deprecated)]
         error::Error::description(self).fmt(f)
     }
 }

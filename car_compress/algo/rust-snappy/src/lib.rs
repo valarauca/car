@@ -95,8 +95,8 @@ extern crate rand;
 #[cfg(all(test, feature = "cpp"))]
 extern crate snappy_cpp;
 
-pub use compress::{Encoder, max_compress_len};
-pub use decompress::{Decoder, decompress_len};
+pub use compress::{max_compress_len, Encoder};
+pub use decompress::{decompress_len, Decoder};
 pub use error::{Error, IntoInnerError, Result};
 pub use frame::{Reader, Writer};
 

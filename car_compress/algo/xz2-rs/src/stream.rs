@@ -301,9 +301,10 @@ impl Stream {
     pub fn new_lzma_encoder(options: &LzmaOptions) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(
-                lzma_sys::lzma_alone_encoder(&mut init.raw, &options.raw),
-            ));
+            try!(cvt(lzma_sys::lzma_alone_encoder(
+                &mut init.raw,
+                &options.raw
+            ),));
             Ok(init)
         }
     }
@@ -357,9 +358,11 @@ impl Stream {
     pub fn new_auto_decoder(memlimit: u64, flags: u32) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(
-                lzma_sys::lzma_auto_decoder(&mut init.raw, memlimit, flags),
-            ));
+            try!(cvt(lzma_sys::lzma_auto_decoder(
+                &mut init.raw,
+                memlimit,
+                flags
+            ),));
             Ok(init)
         }
     }
@@ -593,12 +596,10 @@ impl Filters {
     /// Creates a new filter chain with no filters.
     pub fn new() -> Filters {
         Filters {
-            inner: vec![
-                lzma_sys::lzma_filter {
-                    id: lzma_sys::LZMA_VLI_UNKNOWN,
-                    options: 0 as *mut _,
-                },
-            ],
+            inner: vec![lzma_sys::lzma_filter {
+                id: lzma_sys::LZMA_VLI_UNKNOWN,
+                options: 0 as *mut _,
+            }],
             lzma_opts: LinkedList::new(),
         }
     }
@@ -794,9 +795,10 @@ impl MtStreamBuilder {
     pub fn encoder(&self) -> Result<Stream, Error> {
         unsafe {
             let mut init = Stream { raw: mem::zeroed() };
-            try!(cvt(
-                lzma_sys::lzma_stream_encoder_mt(&mut init.raw, &self.raw),
-            ));
+            try!(cvt(lzma_sys::lzma_stream_encoder_mt(
+                &mut init.raw,
+                &self.raw
+            ),));
             Ok(init)
         }
     }

@@ -1,6 +1,6 @@
 use ll;
 
-use ::parse_code;
+use parse_code;
 use std::io::{self, Write};
 
 struct EncoderContext {
@@ -9,7 +9,9 @@ struct EncoderContext {
 
 impl Default for EncoderContext {
     fn default() -> Self {
-        EncoderContext { s: unsafe { ll::ZSTD_createCStream() } }
+        EncoderContext {
+            s: unsafe { ll::ZSTD_createCStream() },
+        }
     }
 }
 
@@ -49,9 +51,10 @@ pub struct AutoFinishEncoder<W: Write> {
 }
 
 impl<W: Write> AutoFinishEncoder<W> {
-    fn new<F: 'static + FnMut(io::Result<W>)>(encoder: Encoder<W>,
-                                              on_finish: F)
-                                              -> Self {
+    fn new<F: 'static + FnMut(io::Result<W>)>(
+        encoder: Encoder<W>,
+        on_finish: F,
+    ) -> Self {
         AutoFinishEncoder {
             encoder: Some(encoder),
             on_finish: Some(Box::new(on_finish)),
@@ -73,7 +76,6 @@ impl<W: Write> Write for AutoFinishEncoder<W> {
         self.encoder.as_mut().unwrap().write(buf)
     }
 
-
     fn flush(&mut self) -> io::Result<()> {
         self.encoder.as_mut().unwrap().flush()
     }
@@ -91,16 +93,21 @@ impl<W: Write> Encoder<W> {
     ///
     /// (Provides better compression ratio for small files,
     /// but requires the dictionary to be present during decompression.)
-    pub fn with_dictionary(writer: W, level: i32, dictionary: &[u8])
-                           -> io::Result<Self> {
+    pub fn with_dictionary(
+        writer: W,
+        level: i32,
+        dictionary: &[u8],
+    ) -> io::Result<Self> {
         let context = EncoderContext::default();
 
         // Initialize the stream with an existing dictionary
         parse_code(unsafe {
-            ll::ZSTD_initCStream_usingDict(context.s,
-                                           dictionary.as_ptr(),
-                                           dictionary.len(),
-                                           level)
+            ll::ZSTD_initCStream_usingDict(
+                context.s,
+                dictionary.as_ptr(),
+                dictionary.len(),
+                level,
+            )
         })?;
 
         Encoder::with_context(writer, context)
@@ -120,9 +127,10 @@ impl<W: Write> Encoder<W> {
     /// Returns an encoder that will finish the stream on drop.
     ///
     /// Calls the given callback with the result from `finish()`.
-    pub fn on_finish<F: 'static + FnMut(io::Result<W>)>
-        (self, f: F)
-         -> AutoFinishEncoder<W> {
+    pub fn on_finish<F: 'static + FnMut(io::Result<W>)>(
+        self,
+        f: F,
+    ) -> AutoFinishEncoder<W> {
         AutoFinishEncoder::new(self, f)
     }
 
@@ -146,7 +154,6 @@ impl<W: Write> Encoder<W> {
     /// **Note**: If you don't want (or can't) call `finish()` manually after writing your data,
     /// consider using `auto_finish()` to get an `AutoFinishEncoder`.
     pub fn finish(mut self) -> io::Result<W> {
-
         // First, closes the stream.
 
         let mut buffer = ll::ZSTD_outBuffer {
@@ -155,8 +162,10 @@ impl<W: Write> Encoder<W> {
             pos: 0,
         };
         let remaining = parse_code(unsafe {
-            ll::ZSTD_endStream(self.context.s,
-                               &mut buffer as *mut ll::ZSTD_outBuffer)
+            ll::ZSTD_endStream(
+                self.context.s,
+                &mut buffer as *mut ll::ZSTD_outBuffer,
+            )
         })?;
         unsafe {
             self.buffer.set_len(buffer.pos);
@@ -181,14 +190,14 @@ impl<W: Write> Encoder<W> {
 
 impl<W: Write> Write for Encoder<W> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-
-
         if self.offset < self.buffer.len() {
             // If we still had some things to write, do it first.
             self.offset += self.writer.write(&self.buffer[self.offset..])?;
             // Maybe next time!
-            return Err(io::Error::new(io::ErrorKind::Interrupted,
-                                      "Internal buffer full"));
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "Internal buffer full",
+            ));
         }
 
         // If we get to here, `self.buffer` can safely be discarded.
@@ -205,12 +214,13 @@ impl<W: Write> Write for Encoder<W> {
             pos: 0,
         };
 
-
         unsafe {
             // Time to fill our input buffer
-            let code = ll::ZSTD_compressStream(self.context.s,
-                                                   &mut out_buffer as *mut ll::ZSTD_outBuffer,
-                                                   &mut in_buffer as *mut ll::ZSTD_inBuffer);
+            let code = ll::ZSTD_compressStream(
+                self.context.s,
+                &mut out_buffer as *mut ll::ZSTD_outBuffer,
+                &mut in_buffer as *mut ll::ZSTD_inBuffer,
+            );
             // Note: this may very well be empty,
             // if it doesn't exceed zstd's own buffer
             self.buffer.set_len(out_buffer.pos);
@@ -218,7 +228,6 @@ impl<W: Write> Write for Encoder<W> {
             // Do we care about the hint?
             let _ = parse_code(code)?;
         }
-
 
         // This is the first time he sees this buffer.
         // Remember his delicate touch.
@@ -234,9 +243,10 @@ impl<W: Write> Write for Encoder<W> {
             pos: 0,
         };
         unsafe {
-            let code =
-                ll::ZSTD_flushStream(self.context.s,
-                                     &mut buffer as *mut ll::ZSTD_outBuffer);
+            let code = ll::ZSTD_flushStream(
+                self.context.s,
+                &mut buffer as *mut ll::ZSTD_outBuffer,
+            );
             self.buffer.set_len(buffer.pos);
             let _ = parse_code(code)?;
         }

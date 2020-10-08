@@ -1,10 +1,10 @@
 //! Writer-based compression/decompression streams
 
 use std::cmp;
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 
-use stream::{Decompress, Status, Compress, CompressParams};
+use stream::{Compress, CompressParams, Decompress, Status};
 
 /// A compression stream which will have uncompressed data written to it and
 /// will write compressed data to an output stream.
@@ -32,7 +32,7 @@ impl<W: Write> BrotliEncoder<W> {
         BrotliEncoder {
             max: data.input_block_size(),
             cur: 0,
-            data: data,
+            data,
             obj: Some(obj),
         }
     }
@@ -44,14 +44,13 @@ impl<W: Write> BrotliEncoder<W> {
         BrotliEncoder {
             max: data.input_block_size(),
             cur: 0,
-            data: data,
+            data,
             obj: Some(obj),
         }
     }
 
-
     fn do_finish(&mut self) -> io::Result<()> {
-        let data = try!(self.data.compress(true, false));
+        let data = self.data.compress(true, false)?;
         self.obj.as_mut().unwrap().write_all(data)
     }
 
@@ -60,7 +59,7 @@ impl<W: Write> BrotliEncoder<W> {
     /// This will flush the underlying data stream and then return the contained
     /// writer if the flush succeeded.
     pub fn finish(mut self) -> io::Result<W> {
-        try!(self.do_finish());
+        self.do_finish()?;
         Ok(self.obj.take().unwrap())
     }
 }
@@ -68,8 +67,8 @@ impl<W: Write> BrotliEncoder<W> {
 impl<W: Write> Write for BrotliEncoder<W> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         if self.cur > 0 {
-            let data = try!(self.data.compress(false, false));
-            try!(self.obj.as_mut().unwrap().write_all(data));
+            let data = self.data.compress(false, false)?;
+            self.obj.as_mut().unwrap().write_all(data)?;
             self.cur = 0;
         }
         let amt = cmp::min(data.len(), self.max);
@@ -79,7 +78,7 @@ impl<W: Write> Write for BrotliEncoder<W> {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        let data = try!(self.data.compress(false, true));
+        let data = self.data.compress(false, true)?;
         let obj = self.obj.as_mut().unwrap();
         obj.write_all(data).and_then(|_| obj.flush())
     }
@@ -105,8 +104,8 @@ impl<W: Write> BrotliDecoder<W> {
     }
 
     fn dump(&mut self) -> io::Result<()> {
-        if self.buf.len() > 0 {
-            try!(self.obj.as_mut().unwrap().write_all(&self.buf));
+        if !self.buf.is_empty() {
+            self.obj.as_mut().unwrap().write_all(&self.buf)?;
             self.buf.truncate(0);
         }
         Ok(())
@@ -114,19 +113,18 @@ impl<W: Write> BrotliDecoder<W> {
 
     fn do_finish(&mut self) -> io::Result<()> {
         loop {
-            try!(self.dump());
-            let res = try!(self.data.decompress_vec(&mut &[][..], &mut self.buf));
+            self.dump()?;
+            let res = self.data.decompress_vec(&mut &[][..], &mut self.buf)?;
             if res == Status::Finished {
                 break;
             }
-
         }
         self.dump()
     }
 
     /// Unwrap the underlying writer, finishing the compression stream.
     pub fn finish(&mut self) -> io::Result<W> {
-        try!(self.do_finish());
+        self.do_finish()?;
         Ok(self.obj.take().unwrap())
     }
 }
@@ -134,20 +132,20 @@ impl<W: Write> BrotliDecoder<W> {
 impl<W: Write> Write for BrotliDecoder<W> {
     fn write(&mut self, mut data: &[u8]) -> io::Result<usize> {
         loop {
-            try!(self.dump());
+            self.dump()?;
 
             let data_len = data.len();
-            let res = try!(self.data.decompress_vec(&mut data, &mut self.buf));
+            let res = self.data.decompress_vec(&mut data, &mut self.buf)?;
             let written = data_len - data.len();
 
-            if written > 0 || data.len() == 0 || res == Status::Finished {
+            if written > 0 || data.is_empty() || res == Status::Finished {
                 return Ok(written);
             }
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        try!(self.dump());
+        self.dump()?;
         self.obj.as_mut().unwrap().flush()
     }
 }
@@ -162,9 +160,9 @@ impl<W: Write> Drop for BrotliDecoder<W> {
 
 #[cfg(test)]
 mod tests {
+    use super::{BrotliDecoder, BrotliEncoder};
     use std::io::prelude::*;
     use std::iter::repeat;
-    use super::{BrotliEncoder, BrotliDecoder};
 
     #[test]
     fn smoke() {

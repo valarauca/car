@@ -22,6 +22,7 @@
 //! assert_eq!(contents, "Hello, World!");
 //! ```
 
+#![allow(clippy::new_without_default)]
 #![deny(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/brotli2/0.2")]
 
@@ -29,11 +30,11 @@ extern crate brotli_sys;
 extern crate libc;
 
 #[cfg(test)]
-extern crate rand;
-#[cfg(test)]
 extern crate quickcheck;
+#[cfg(test)]
+extern crate rand;
 
-pub mod stream;
 pub mod bufread;
 pub mod read;
+pub mod stream;
 pub mod write;

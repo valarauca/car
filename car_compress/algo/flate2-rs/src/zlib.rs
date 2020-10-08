@@ -1,7 +1,7 @@
 //! ZLIB compression and decompression of streams
 
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 use std::mem;
 
 use bufreader::BufReader;
@@ -65,7 +65,9 @@ impl<W: Write> EncoderWriter<W> {
     /// When this encoder is dropped or unwrapped the final pieces of data will
     /// be flushed.
     pub fn new(w: W, level: ::Compression) -> EncoderWriter<W> {
-        EncoderWriter { inner: zio::Writer::new(w, Compress::new(level, true)) }
+        EncoderWriter {
+            inner: zio::Writer::new(w, Compress::new(level, true)),
+        }
     }
 
     /// Resets the state of this encoder entirely, swapping out the output
@@ -80,7 +82,7 @@ impl<W: Write> EncoderWriter<W> {
     /// provided, returning the previous output stream. Future data written to
     /// this encoder will be the compressed into the stream `w` provided.
     pub fn reset(&mut self, w: W) -> io::Result<W> {
-        try!(self.inner.finish());
+        self.inner.finish()?;
         self.inner.data.reset();
         Ok(self.inner.replace(w))
     }
@@ -90,7 +92,7 @@ impl<W: Write> EncoderWriter<W> {
     /// This will flush the underlying data stream and then return the contained
     /// writer if the flush succeeded.
     pub fn finish(mut self) -> io::Result<W> {
-        try!(self.inner.finish());
+        self.inner.finish()?;
         Ok(self.inner.into_inner())
     }
 }
@@ -109,7 +111,9 @@ impl<R: Read> EncoderReader<R> {
     /// Creates a new encoder which will read uncompressed data from the given
     /// stream and emit the compressed stream.
     pub fn new(r: R, level: ::Compression) -> EncoderReader<R> {
-        EncoderReader { inner: EncoderReaderBuf::new(BufReader::new(r), level) }
+        EncoderReader {
+            inner: EncoderReaderBuf::new(BufReader::new(r), level),
+        }
     }
 
     /// Resets the state of this encoder entirely, swapping out the input
@@ -208,7 +212,9 @@ impl<R: Read> DecoderReader<R> {
     /// Note that the specified buffer will only be used up to its current
     /// length. The buffer's capacity will also not grow over time.
     pub fn new_with_buf(r: R, buf: Vec<u8>) -> DecoderReader<R> {
-        DecoderReader { inner: DecoderReaderBuf::new(BufReader::with_buf(buf, r)) }
+        DecoderReader {
+            inner: DecoderReaderBuf::new(BufReader::with_buf(buf, r)),
+        }
     }
 
     /// Resets the state of this decoder entirely, swapping out the input
@@ -327,7 +333,9 @@ impl<W: Write> DecoderWriter<W> {
     /// When this decoder is dropped or unwrapped the final pieces of data will
     /// be flushed.
     pub fn new(w: W) -> DecoderWriter<W> {
-        DecoderWriter { inner: zio::Writer::new(w, Decompress::new(true)) }
+        DecoderWriter {
+            inner: zio::Writer::new(w, Decompress::new(true)),
+        }
     }
 
     /// Resets the state of this decoder entirely, swapping out the output
@@ -338,7 +346,7 @@ impl<W: Write> DecoderWriter<W> {
     /// stream. Future data written to this decoder will be decompressed into
     /// the output stream `w`.
     pub fn reset(&mut self, w: W) -> io::Result<W> {
-        try!(self.inner.finish());
+        self.inner.finish()?;
         self.inner.data = Decompress::new(true);
         Ok(self.inner.replace(w))
     }
@@ -348,7 +356,7 @@ impl<W: Write> DecoderWriter<W> {
     /// This will flush the underlying data stream and then return the contained
     /// writer if the flush succeeded.
     pub fn finish(mut self) -> io::Result<W> {
-        try!(self.inner.finish());
+        self.inner.finish()?;
         Ok(self.inner.into_inner())
     }
 
@@ -380,12 +388,12 @@ impl<W: Write> Write for DecoderWriter<W> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::prelude::*;
     use std::io;
+    use std::io::prelude::*;
 
     use rand::{thread_rng, Rng};
 
-    use zlib::{EncoderWriter, EncoderReader, DecoderReader, DecoderWriter};
+    use zlib::{DecoderReader, DecoderWriter, EncoderReader, EncoderWriter};
     use Compression::Default;
 
     #[test]

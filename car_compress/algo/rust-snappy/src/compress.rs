@@ -5,7 +5,7 @@ use byteorder::{ByteOrder, LittleEndian as LE};
 
 use error::{Error, Result};
 use varint::write_varu64;
-use {MAX_INPUT_SIZE, MAX_BLOCK_SIZE};
+use {MAX_BLOCK_SIZE, MAX_INPUT_SIZE};
 
 /// The total number of slots we permit for our hash table of 4 byte repeat
 /// sequences.
@@ -336,8 +336,8 @@ impl<'s, 'd> Block<'s, 'd> {
         }
         // If we can squeeze the last copy into a copy 1 operation, do it.
         if len <= 11 && offset <= 2047 {
-            self.dst[self.d] = (((offset >> 8) as u8) << 5) | (((len - 4) as u8) << 2) |
-                (Tag::Copy1 as u8);
+            self.dst[self.d] =
+                (((offset >> 8) as u8) << 5) | (((len - 4) as u8) << 2) | (Tag::Copy1 as u8);
             self.dst[self.d + 1] = offset as u8;
             self.d += 2;
         } else {

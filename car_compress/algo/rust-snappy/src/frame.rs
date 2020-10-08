@@ -1,17 +1,16 @@
 use std::cmp;
 use std::io::{self, Read, Write};
 
-use byteorder::{ReadBytesExt, ByteOrder, LittleEndian as LE};
+use byteorder::{ByteOrder, LittleEndian as LE, ReadBytesExt};
 
-use compress::{Encoder, max_compress_len};
+use compress::{max_compress_len, Encoder};
 use crc32::crc32c;
-use decompress::{Decoder, decompress_len};
-use error::{Error, IntoInnerError, new_into_inner_error};
+use decompress::{decompress_len, Decoder};
+use error::{new_into_inner_error, Error, IntoInnerError};
 use MAX_BLOCK_SIZE;
 
 lazy_static! {
-    static ref MAX_COMPRESS_BLOCK_SIZE: usize =
-        max_compress_len(MAX_BLOCK_SIZE);
+    static ref MAX_COMPRESS_BLOCK_SIZE: usize = max_compress_len(MAX_BLOCK_SIZE);
 }
 
 // The special magic string that starts any stream.
@@ -262,7 +261,7 @@ impl<R: Read> Read for Reader<R> {
         macro_rules! fail {
             ($err:expr) => {
                 return Err(io::Error::from($err));
-            }
+            };
         }
         loop {
             if self.dsts < self.dste {

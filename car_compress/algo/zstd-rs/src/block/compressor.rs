@@ -1,5 +1,5 @@
 use ll;
-use ::parse_code;
+use parse_code;
 
 use std::io;
 
@@ -9,7 +9,9 @@ struct EncoderContext {
 
 impl Default for EncoderContext {
     fn default() -> Self {
-        EncoderContext { c: unsafe { ll::ZSTD_createCCtx() } }
+        EncoderContext {
+            c: unsafe { ll::ZSTD_createCCtx() },
+        }
     }
 }
 
@@ -48,18 +50,23 @@ impl Compressor {
     ///
     /// Returns the number of bytes written, or an error if something happened
     /// (for instance if the destination buffer was too small).
-    pub fn compress_to_buffer(&mut self, source: &[u8],
-                              destination: &mut [u8], level: i32)
-                              -> io::Result<usize> {
+    pub fn compress_to_buffer(
+        &mut self,
+        source: &[u8],
+        destination: &mut [u8],
+        level: i32,
+    ) -> io::Result<usize> {
         let code = unsafe {
-            ll::ZSTD_compress_usingDict(self.context.c,
-                                        destination.as_mut_ptr(),
-                                        destination.len(),
-                                        source.as_ptr(),
-                                        source.len(),
-                                        self.dict.as_ptr(),
-                                        self.dict.len(),
-                                        level)
+            ll::ZSTD_compress_usingDict(
+                self.context.c,
+                destination.as_mut_ptr(),
+                destination.len(),
+                source.as_ptr(),
+                source.len(),
+                self.dict.as_ptr(),
+                self.dict.len(),
+                level,
+            )
         };
         parse_code(code)
     }

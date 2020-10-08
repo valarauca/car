@@ -1,9 +1,9 @@
 //! Writer-based compression/decompression streams
 
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 
-use {Action, Status, Compression, Compress, Decompress};
+use {Action, Compress, Compression, Decompress, Status};
 
 /// A compression stream which will have uncompressed data written to it and
 /// will write compressed data to an output stream.
@@ -34,8 +34,8 @@ impl<W: Write> BzEncoder<W> {
     }
 
     fn dump(&mut self) -> io::Result<()> {
-        if self.buf.len() > 0 {
-            try!(self.obj.as_mut().unwrap().write_all(&self.buf));
+        if !self.buf.is_empty() {
+            self.obj.as_mut().unwrap().write_all(&self.buf)?;
             self.buf.truncate(0);
         }
         Ok(())
@@ -43,7 +43,7 @@ impl<W: Write> BzEncoder<W> {
 
     fn do_finish(&mut self) -> io::Result<()> {
         loop {
-            try!(self.dump());
+            self.dump()?;
             let res = self.data.compress_vec(&[], &mut self.buf, Action::Finish);
             if res == Ok(Status::StreamEnd) {
                 break;
@@ -57,7 +57,7 @@ impl<W: Write> BzEncoder<W> {
     /// This will flush the underlying data stream and then return the contained
     /// writer if the flush succeeded.
     pub fn finish(mut self) -> io::Result<W> {
-        try!(self.do_finish());
+        self.do_finish()?;
         Ok(self.obj.take().unwrap())
     }
 
@@ -80,7 +80,7 @@ impl<W: Write> BzEncoder<W> {
 impl<W: Write> Write for BzEncoder<W> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         loop {
-            try!(self.dump());
+            self.dump()?;
 
             let total_in = self.total_in();
             self.data
@@ -88,7 +88,7 @@ impl<W: Write> Write for BzEncoder<W> {
                 .unwrap();
             let written = (self.total_in() - total_in) as usize;
 
-            if written > 0 || data.len() == 0 {
+            if written > 0 || data.is_empty() {
                 return Ok(written);
             }
         }
@@ -96,7 +96,7 @@ impl<W: Write> Write for BzEncoder<W> {
 
     fn flush(&mut self) -> io::Result<()> {
         loop {
-            try!(self.dump());
+            self.dump()?;
             let before = self.total_out();
             self.data
                 .compress_vec(&[], &mut self.buf, Action::Flush)
@@ -131,8 +131,8 @@ impl<W: Write> BzDecoder<W> {
     }
 
     fn dump(&mut self) -> io::Result<()> {
-        if self.buf.len() > 0 {
-            try!(self.obj.as_mut().unwrap().write_all(&self.buf));
+        if !self.buf.is_empty() {
+            self.obj.as_mut().unwrap().write_all(&self.buf)?;
             self.buf.truncate(0);
         }
         Ok(())
@@ -140,14 +140,15 @@ impl<W: Write> BzDecoder<W> {
 
     fn do_finish(&mut self) -> io::Result<()> {
         while !self.done {
-            try!(self.write(&[]));
+            #[deny(clippy::unused_io_amount)]
+            self.write_all(&[])?;
         }
         self.dump()
     }
 
     /// Unwrap the underlying writer, finishing the compression stream.
     pub fn finish(&mut self) -> io::Result<W> {
-        try!(self.do_finish());
+        self.do_finish()?;
         Ok(self.obj.take().unwrap())
     }
 
@@ -173,27 +174,25 @@ impl<W: Write> Write for BzDecoder<W> {
             return Ok(0);
         }
         loop {
-            try!(self.dump());
+            self.dump()?;
 
             let before = self.total_in();
             let res = self.data.decompress_vec(data, &mut self.buf);
             let written = (self.total_in() - before) as usize;
 
-            let res = try!(res.map_err(
-                |e| io::Error::new(io::ErrorKind::InvalidInput, e),
-            ));
+            let res = res.map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
 
             if res == Status::StreamEnd {
                 self.done = true;
             }
-            if written > 0 || data.len() == 0 || self.done {
+            if written > 0 || data.is_empty() || self.done {
                 return Ok(written);
             }
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        try!(self.dump());
+        self.dump()?;
         self.obj.as_mut().unwrap().flush()
     }
 }
@@ -208,9 +207,9 @@ impl<W: Write> Drop for BzDecoder<W> {
 
 #[cfg(test)]
 mod tests {
+    use super::{BzDecoder, BzEncoder};
     use std::io::prelude::*;
     use std::iter::repeat;
-    use super::{BzEncoder, BzDecoder};
 
     #[test]
     fn smoke() {

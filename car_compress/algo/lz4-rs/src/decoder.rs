@@ -1,7 +1,7 @@
-use std::io::{Error, ErrorKind, Read, Result};
-use std::ptr;
 use super::liblz4::*;
 use libc::size_t;
+use std::io::{Error, ErrorKind, Read, Result};
+use std::ptr;
 
 const BUFFER_SIZE: usize = 32 * 1024;
 
@@ -43,12 +43,10 @@ impl<R: Read> Decoder<R> {
             self.r,
             match self.next {
                 0 => Ok(()),
-                _ => {
-                    Err(Error::new(
-                        ErrorKind::Interrupted,
-                        "Finish runned before read end of compressed stream",
-                    ))
-                }
+                _ => Err(Error::new(
+                    ErrorKind::Interrupted,
+                    "Finish runned before read end of compressed stream",
+                )),
             },
         )
     }
@@ -119,10 +117,10 @@ impl Drop for DecoderContext {
 #[cfg(test)]
 mod test {
     extern crate rand;
-    use std::io::{Cursor, Read, Write, Result, Error, ErrorKind};
     use self::rand::{Rng, StdRng};
     use super::super::encoder::{Encoder, EncoderBuilder};
     use super::Decoder;
+    use std::io::{Cursor, Error, ErrorKind, Read, Result, Write};
 
     const BUFFER_SIZE: usize = 64 * 1024;
     const END_MARK: [u8; 4] = [0x9f, 0x77, 0x22, 0x71];
@@ -254,8 +252,8 @@ mod test {
         encoder.write(&expected).unwrap();
         let encoded = finish_encode(encoder);
 
-        let mut decoder = Decoder::new(ErrorWrapper::new(rnd.clone(), Cursor::new(encoded)))
-            .unwrap();
+        let mut decoder =
+            Decoder::new(ErrorWrapper::new(rnd.clone(), Cursor::new(encoded))).unwrap();
         let mut actual = Vec::new();
         loop {
             let mut buffer = [0; BUFFER_SIZE];

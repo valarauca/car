@@ -15,32 +15,38 @@
 //! [`Decoder::with_dictionary`]: ../struct.Decoder.html#method.with_dictionary
 
 use ll;
-use ::parse_code;
+use parse_code;
 
+use std::fs;
 use std::io::{self, Read};
 use std::path;
-use std::fs;
 
 /// Train a dictionary from a big continuous chunk of data.
 ///
 /// This is the most efficient way to train a dictionary,
 /// since this is directly fed into `zstd`.
-pub fn from_continuous(sample_data: &[u8], sample_sizes: &[usize],
-                       max_size: usize)
-                       -> io::Result<Vec<u8>> {
+pub fn from_continuous(
+    sample_data: &[u8],
+    sample_sizes: &[usize],
+    max_size: usize,
+) -> io::Result<Vec<u8>> {
     // Complain if the lengths don't add up to the entire data.
     if sample_sizes.iter().sum::<usize>() != sample_data.len() {
-        return Err(io::Error::new(io::ErrorKind::Other,
-                                  "sample sizes don't add up".to_string()));
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "sample sizes don't add up".to_string(),
+        ));
     }
 
     let mut result = Vec::with_capacity(max_size);
     unsafe {
-        let code = ll::ZDICT_trainFromBuffer(result.as_mut_ptr(),
-                                             result.capacity(),
-                                             sample_data.as_ptr(),
-                                             sample_sizes.as_ptr(),
-                                             sample_sizes.len());
+        let code = ll::ZDICT_trainFromBuffer(
+            result.as_mut_ptr(),
+            result.capacity(),
+            sample_data.as_ptr(),
+            sample_sizes.as_ptr(),
+            sample_sizes.len(),
+        );
         let written = try!(parse_code(code));
         result.set_len(written);
     }
@@ -56,13 +62,13 @@ pub fn from_continuous(sample_data: &[u8], sample_sizes: &[usize],
 /// [`from_continuous`] directly uses the given slice.
 ///
 /// [`from_continuous`]: ./fn.from_continuous.html
-pub fn from_samples<S: AsRef<[u8]>>(samples: &[S], max_size: usize)
-                                    -> io::Result<Vec<u8>> {
+pub fn from_samples<S: AsRef<[u8]>>(
+    samples: &[S],
+    max_size: usize,
+) -> io::Result<Vec<u8>> {
     // Copy every sample to a big chunk of memory
-    let data: Vec<_> = samples.iter()
-        .flat_map(|s| s.as_ref())
-        .cloned()
-        .collect();
+    let data: Vec<_> =
+        samples.iter().flat_map(|s| s.as_ref()).cloned().collect();
     let sizes: Vec<_> = samples.iter().map(|s| s.as_ref().len()).collect();
 
     from_continuous(&data, &sizes, max_size)
@@ -70,8 +76,9 @@ pub fn from_samples<S: AsRef<[u8]>>(samples: &[S], max_size: usize)
 
 /// Train a dict from a list of files.
 pub fn from_files<I, P>(filenames: I, max_size: usize) -> io::Result<Vec<u8>>
-    where P: AsRef<path::Path>,
-          I: IntoIterator<Item = P>
+where
+    P: AsRef<path::Path>,
+    I: IntoIterator<Item = P>,
 {
     let mut buffer = Vec::new();
     let mut sizes = Vec::new();
@@ -108,20 +115,24 @@ mod tests {
             let mut file = fs::File::open(path).unwrap();
             let mut content = Vec::new();
             file.read_to_end(&mut content).unwrap();
-            io::copy(&mut &content[..],
-                     &mut ::stream::Encoder::with_dictionary(&mut buffer,
-                                                             1,
-                                                             &dict)
-                         .unwrap()
-                         .auto_finish())
-                .unwrap();
+            io::copy(
+                &mut &content[..],
+                &mut ::stream::Encoder::with_dictionary(&mut buffer, 1, &dict)
+                    .unwrap()
+                    .auto_finish(),
+            )
+            .unwrap();
 
             let mut result = Vec::new();
-            io::copy(&mut ::stream::Decoder::with_dictionary(&buffer[..],
-                                                             &dict[..])
-                         .unwrap(),
-                     &mut result)
-                .unwrap();
+            io::copy(
+                &mut ::stream::Decoder::with_dictionary(
+                    &buffer[..],
+                    &dict[..],
+                )
+                .unwrap(),
+                &mut result,
+            )
+            .unwrap();
 
             assert_eq!(&content, &result);
         }

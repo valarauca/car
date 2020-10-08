@@ -1,9 +1,9 @@
-extern crate zstd;
 extern crate clap;
+extern crate zstd;
 
+use clap::{App, Arg};
 use std::fs;
 use std::io;
-use clap::{App, Arg};
 
 fn main() {
     // This will be a simple application:
@@ -12,11 +12,10 @@ fn main() {
         .version("0.1")
         .author("Yann Collet (zstd), Alexandre Bury (zstd-rs)")
         .about("Decompress FILEs to standard output.")
-        .arg(Arg::with_name("FILE")
-            .index(1)
-            .multiple(true)
-            .help("Files to decompress. With no file, or when given -, \
-                   read standard input."))
+        .arg(Arg::with_name("FILE").index(1).multiple(true).help(
+            "Files to decompress. With no file, or when given -, \
+                   read standard input.",
+        ))
         .get_matches();
 
     // If nothign was given, act as if `-` was there.

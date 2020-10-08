@@ -7,8 +7,8 @@ use std::slice;
 
 use libc::{c_int, c_uint};
 
-use Compression;
 use ffi;
+use Compression;
 
 /// Raw in-memory compression stream for blocks of data.
 ///
@@ -213,8 +213,8 @@ impl Compress {
         // Unfortunately the total counters provided by zlib might be only
         // 32 bits wide and overflow while processing large amounts of data.
         self.inner.total_in += (self.inner.raw.next_in as usize - input.as_ptr() as usize) as u64;
-        self.inner.total_out += (self.inner.raw.next_out as usize - output.as_ptr() as usize) as
-            u64;
+        self.inner.total_out +=
+            (self.inner.raw.next_out as usize - output.as_ptr() as usize) as u64;
 
         match rc {
             ffi::MZ_OK => Status::Ok,
@@ -319,12 +319,11 @@ impl Decompress {
         // Unfortunately the total counters provided by zlib might be only
         // 32 bits wide and overflow while processing large amounts of data.
         self.inner.total_in += (self.inner.raw.next_in as usize - input.as_ptr() as usize) as u64;
-        self.inner.total_out += (self.inner.raw.next_out as usize - output.as_ptr() as usize) as
-            u64;
+        self.inner.total_out +=
+            (self.inner.raw.next_out as usize - output.as_ptr() as usize) as u64;
 
         match rc {
-            ffi::MZ_DATA_ERROR |
-            ffi::MZ_STREAM_ERROR => Err(DataError(())),
+            ffi::MZ_DATA_ERROR | ffi::MZ_STREAM_ERROR => Err(DataError(())),
             ffi::MZ_OK => Ok(Status::Ok),
             ffi::MZ_BUF_ERROR => Ok(Status::BufError),
             ffi::MZ_STREAM_END => Ok(Status::StreamEnd),
@@ -407,7 +406,7 @@ impl From<DataError> for io::Error {
 
 impl fmt::Display for DataError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
+        write!(f, "deflate data error")
     }
 }
 
@@ -440,147 +439,25 @@ mod tests {
     #[test]
     fn issue51() {
         let data = vec![
-            0x1f,
-            0x8b,
-            0x08,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x03,
-            0xb3,
-            0xc9,
-            0x28,
-            0xc9,
-            0xcd,
-            0xb1,
-            0xe3,
-            0xe5,
-            0xb2,
-            0xc9,
-            0x48,
-            0x4d,
-            0x4c,
-            0xb1,
-            0xb3,
-            0x29,
-            0xc9,
-            0x2c,
-            0xc9,
-            0x49,
-            0xb5,
-            0x33,
-            0x31,
-            0x30,
-            0x51,
-            0xf0,
-            0xcb,
-            0x2f,
-            0x51,
-            0x70,
-            0xcb,
-            0x2f,
-            0xcd,
-            0x4b,
-            0xb1,
-            0xd1,
-            0x87,
-            0x08,
-            0xda,
-            0xe8,
-            0x83,
-            0x95,
-            0x00,
-            0x95,
-            0x26,
-            0xe5,
-            0xa7,
-            0x54,
-            0x2a,
-            0x24,
-            0xa5,
-            0x27,
-            0xe7,
-            0xe7,
-            0xe4,
-            0x17,
-            0xd9,
-            0x2a,
-            0x95,
-            0x67,
-            0x64,
-            0x96,
-            0xa4,
-            0x2a,
-            0x81,
-            0x8c,
-            0x48,
-            0x4e,
-            0xcd,
-            0x2b,
-            0x49,
-            0x2d,
-            0xb2,
-            0xb3,
-            0xc9,
-            0x30,
-            0x44,
-            0x37,
-            0x01,
-            0x28,
-            0x62,
-            0xa3,
-            0x0f,
-            0x95,
-            0x06,
-            0xd9,
-            0x05,
-            0x54,
-            0x04,
-            0xe5,
-            0xe5,
-            0xa5,
-            0x67,
-            0xe6,
-            0x55,
-            0xe8,
-            0x1b,
-            0xea,
-            0x99,
-            0xe9,
-            0x19,
-            0x21,
-            0xab,
-            0xd0,
-            0x07,
-            0xd9,
-            0x01,
-            0x32,
-            0x53,
-            0x1f,
-            0xea,
-            0x3e,
-            0x00,
-            0x94,
-            0x85,
-            0xeb,
-            0xe4,
-            0xa8,
-            0x00,
-            0x00,
-            0x00,
+            0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xb3, 0xc9, 0x28, 0xc9,
+            0xcd, 0xb1, 0xe3, 0xe5, 0xb2, 0xc9, 0x48, 0x4d, 0x4c, 0xb1, 0xb3, 0x29, 0xc9, 0x2c,
+            0xc9, 0x49, 0xb5, 0x33, 0x31, 0x30, 0x51, 0xf0, 0xcb, 0x2f, 0x51, 0x70, 0xcb, 0x2f,
+            0xcd, 0x4b, 0xb1, 0xd1, 0x87, 0x08, 0xda, 0xe8, 0x83, 0x95, 0x00, 0x95, 0x26, 0xe5,
+            0xa7, 0x54, 0x2a, 0x24, 0xa5, 0x27, 0xe7, 0xe7, 0xe4, 0x17, 0xd9, 0x2a, 0x95, 0x67,
+            0x64, 0x96, 0xa4, 0x2a, 0x81, 0x8c, 0x48, 0x4e, 0xcd, 0x2b, 0x49, 0x2d, 0xb2, 0xb3,
+            0xc9, 0x30, 0x44, 0x37, 0x01, 0x28, 0x62, 0xa3, 0x0f, 0x95, 0x06, 0xd9, 0x05, 0x54,
+            0x04, 0xe5, 0xe5, 0xa5, 0x67, 0xe6, 0x55, 0xe8, 0x1b, 0xea, 0x99, 0xe9, 0x19, 0x21,
+            0xab, 0xd0, 0x07, 0xd9, 0x01, 0x32, 0x53, 0x1f, 0xea, 0x3e, 0x00, 0x94, 0x85, 0xeb,
+            0xe4, 0xa8, 0x00, 0x00, 0x00,
         ];
 
         let mut decoded = Vec::with_capacity(data.len() * 2);
 
         let mut d = Decompress::new(false);
         // decompressed whole deflate stream
-        assert!(
-            d.decompress_vec(&data[10..], &mut decoded, Flush::Finish)
-                .is_ok()
-        );
+        assert!(d
+            .decompress_vec(&data[10..], &mut decoded, Flush::Finish)
+            .is_ok());
 
         // decompress data that has nothing to do with the deflate stream (this
         // used to panic)

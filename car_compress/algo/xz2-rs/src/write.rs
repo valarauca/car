@@ -1,9 +1,9 @@
 //! Writer-based compression/decompression streams
 
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 
-use stream::{Action, Status, Stream, Check};
+use stream::{Action, Check, Status, Stream};
 
 /// A compression stream which will have uncompressed data written to it and
 /// will write compressed data to an output stream.
@@ -103,7 +103,8 @@ impl<W: Write> Write for XzEncoder<W> {
     fn flush(&mut self) -> io::Result<()> {
         loop {
             try!(self.dump());
-            let status = self.data
+            let status = self
+                .data
                 .process_vec(&[], &mut self.buf, Action::FullFlush)
                 .unwrap();
             if status == Status::StreamEnd {
@@ -158,7 +159,6 @@ impl<W: Write> XzDecoder<W> {
             if res == Status::StreamEnd {
                 break;
             }
-
         }
         self.dump()
     }
@@ -216,9 +216,9 @@ impl<W: Write> Drop for XzDecoder<W> {
 
 #[cfg(test)]
 mod tests {
+    use super::{XzDecoder, XzEncoder};
     use std::io::prelude::*;
     use std::iter::repeat;
-    use super::{XzEncoder, XzDecoder};
 
     #[test]
     fn smoke() {

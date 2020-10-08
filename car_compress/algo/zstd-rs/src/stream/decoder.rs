@@ -1,5 +1,5 @@
 use ll;
-use ::parse_code;
+use parse_code;
 use std::io::{self, Read};
 
 struct DecoderContext {
@@ -8,7 +8,9 @@ struct DecoderContext {
 
 impl Default for DecoderContext {
     fn default() -> Self {
-        DecoderContext { s: unsafe { ll::ZSTD_createDStream() } }
+        DecoderContext {
+            s: unsafe { ll::ZSTD_createDStream() },
+        }
     }
 }
 
@@ -18,7 +20,6 @@ impl Drop for DecoderContext {
         parse_code(code).unwrap();
     }
 }
-
 
 /// A decoder that decompress input data from another `Read`.
 ///
@@ -56,14 +57,15 @@ impl<R: Read> Decoder<R> {
     ///
     /// The dictionary must be the same as the one used during compression.
     pub fn with_dictionary(reader: R, dictionary: &[u8]) -> io::Result<Self> {
-
         let buffer_size = unsafe { ll::ZSTD_DStreamInSize() };
 
         let context = DecoderContext::default();
         parse_code(unsafe {
-            ll::ZSTD_initDStream_usingDict(context.s,
-                                           dictionary.as_ptr(),
-                                           dictionary.len())
+            ll::ZSTD_initDStream_usingDict(
+                context.s,
+                dictionary.as_ptr(),
+                dictionary.len(),
+            )
         })?;
 
         let decoder = Decoder {
@@ -95,9 +97,10 @@ impl<R: Read> Decoder<R> {
         self.reader
     }
 
-    fn refill_buffer(&mut self, in_buffer: &mut ll::ZSTD_inBuffer)
-                     -> io::Result<bool> {
-
+    fn refill_buffer(
+        &mut self,
+        in_buffer: &mut ll::ZSTD_inBuffer,
+    ) -> io::Result<bool> {
         // We need moar data!
         // Make a nice clean buffer
         let buffer_size = self.buffer.capacity();
@@ -120,7 +123,6 @@ impl<R: Read> Decoder<R> {
 
 impl<R: Read> Read for Decoder<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-
         let mut in_buffer = ll::ZSTD_inBuffer {
             src: self.buffer.as_ptr(),
             size: self.buffer.len(),
@@ -139,7 +141,6 @@ impl<R: Read> Read for Decoder<R> {
             pos: 0,
         };
         while out_buffer.pos != buf.len() {
-
             let mut input_exhausted = false;
 
             if in_buffer.pos == in_buffer.size {
@@ -147,17 +148,20 @@ impl<R: Read> Read for Decoder<R> {
             }
 
             let res = unsafe {
-                let code =
-                    ll::ZSTD_decompressStream(self.context.s,
-                                              &mut out_buffer as *mut ll::ZSTD_outBuffer,
-                                              &mut in_buffer as *mut ll::ZSTD_inBuffer);
+                let code = ll::ZSTD_decompressStream(
+                    self.context.s,
+                    &mut out_buffer as *mut ll::ZSTD_outBuffer,
+                    &mut in_buffer as *mut ll::ZSTD_inBuffer,
+                );
                 parse_code(code)?
             };
 
             if res > 1 && input_exhausted {
                 // zstd keeps asking for more, but we're short on data!
-                return Err(io::Error::new(io::ErrorKind::UnexpectedEof,
-                                          "incomplete frame"));
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "incomplete frame",
+                ));
             }
 
             if res == 0 {
@@ -167,8 +171,9 @@ impl<R: Read> Read for Decoder<R> {
                     in_buffer.pos = self.buffer.capacity() + 1;
                     break;
                 } else {
-                    if in_buffer.pos == in_buffer.size &&
-                       !self.refill_buffer(&mut in_buffer)? {
+                    if in_buffer.pos == in_buffer.size
+                        && !self.refill_buffer(&mut in_buffer)?
+                    {
                         // we're out.
                         in_buffer.pos = self.buffer.capacity() + 1;
                         break;

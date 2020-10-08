@@ -1,9 +1,9 @@
+use std::ffi::CStr;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::str;
-use std::ffi::CStr;
 
 pub use lz4_sys::*;
 

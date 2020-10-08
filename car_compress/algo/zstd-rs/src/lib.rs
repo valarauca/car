@@ -27,15 +27,15 @@ extern crate libc;
 
 mod ll;
 
-pub mod stream;
 pub mod block;
 pub mod dict;
+pub mod stream;
 
 #[doc(no_inline)]
-pub use stream::{Decoder, Encoder, decode_all, encode_all};
+pub use stream::{decode_all, encode_all, Decoder, Encoder};
 
-use std::io;
 use std::ffi::CStr;
+use std::io;
 
 /// Parse the result code
 ///
@@ -47,8 +47,10 @@ fn parse_code(code: libc::size_t) -> Result<usize, io::Error> {
             Ok(code as usize)
         } else {
             let msg = CStr::from_ptr(ll::ZSTD_getErrorName(code));
-            let error = io::Error::new(io::ErrorKind::Other,
-                                       msg.to_str().unwrap().to_string());
+            let error = io::Error::new(
+                io::ErrorKind::Other,
+                msg.to_str().unwrap().to_string(),
+            );
             Err(error)
         }
     }
@@ -58,8 +60,9 @@ fn parse_code(code: libc::size_t) -> Result<usize, io::Error> {
 
 #[cfg(test)]
 fn test_cycle<F, G>(data: &[u8], f: F, g: G)
-    where F: Fn(&[u8]) -> Vec<u8>,
-          G: Fn(&[u8]) -> Vec<u8>
+where
+    F: Fn(&[u8]) -> Vec<u8>,
+    G: Fn(&[u8]) -> Vec<u8>,
 {
     let mid = f(data);
     let end = g(&mid);
@@ -68,8 +71,9 @@ fn test_cycle<F, G>(data: &[u8], f: F, g: G)
 
 #[cfg(test)]
 fn test_cycle_unwrap<F, G>(data: &[u8], f: F, g: G)
-    where F: Fn(&[u8]) -> io::Result<Vec<u8>>,
-          G: Fn(&[u8]) -> io::Result<Vec<u8>>
+where
+    F: Fn(&[u8]) -> io::Result<Vec<u8>>,
+    G: Fn(&[u8]) -> io::Result<Vec<u8>>,
 {
     test_cycle(data, |data| f(data).unwrap(), |data| g(data).unwrap())
 }

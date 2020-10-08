@@ -22,7 +22,9 @@ impl<R: Read> BzEncoder<R> {
     /// Create a new compression stream which will compress at the given level
     /// to read compress output to the give output stream.
     pub fn new(r: R, level: Compression) -> BzEncoder<R> {
-        BzEncoder { inner: bufread::BzEncoder::new(BufReader::new(r), level) }
+        BzEncoder {
+            inner: bufread::BzEncoder::new(BufReader::new(r), level),
+        }
     }
 
     /// Acquires a reference to the underlying stream
@@ -73,7 +75,9 @@ impl<R: Read> BzDecoder<R> {
     /// Create a new decompression stream, which will read compressed
     /// data from the given input stream and decompress it.
     pub fn new(r: R) -> BzDecoder<R> {
-        BzDecoder { inner: bufread::BzDecoder::new(BufReader::new(r)) }
+        BzDecoder {
+            inner: bufread::BzDecoder::new(BufReader::new(r)),
+        }
     }
 
     /// Acquires a reference to the underlying stream
@@ -120,10 +124,10 @@ impl<R: Read> Read for BzDecoder<R> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::prelude::*;
-    use read::{BzEncoder, BzDecoder};
-    use Compression;
     use rand::{thread_rng, Rng};
+    use read::{BzDecoder, BzEncoder};
+    use std::io::prelude::*;
+    use Compression;
 
     #[test]
     fn smoke() {

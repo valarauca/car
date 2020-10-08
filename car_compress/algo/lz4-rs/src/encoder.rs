@@ -1,9 +1,9 @@
-use std::io::Write;
-use std::io::Result;
-use std::cmp;
-use std::ptr;
 use super::liblz4::*;
 use libc::size_t;
+use std::cmp;
+use std::io::Result;
+use std::io::Write;
+use std::ptr;
 
 struct EncoderContext {
     c: LZ4FCompressionContext,
@@ -151,7 +151,6 @@ impl<W: Write> Write for Encoder<W> {
                 try!(self.w.write_all(&self.buffer));
             }
             offset += size;
-
         }
         Ok(buffer.len())
     }
@@ -194,8 +193,8 @@ impl Drop for EncoderContext {
 
 #[cfg(test)]
 mod test {
-    use std::io::Write;
     use super::EncoderBuilder;
+    use std::io::Write;
 
     #[test]
     fn test_encoder_smoke() {

@@ -29,9 +29,9 @@
 extern crate lzma_sys;
 
 #[cfg(test)]
-extern crate rand;
-#[cfg(test)]
 extern crate quickcheck;
+#[cfg(test)]
+extern crate rand;
 
 pub mod stream;
 

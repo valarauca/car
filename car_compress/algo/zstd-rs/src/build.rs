@@ -2,8 +2,7 @@ extern crate gcc;
 extern crate glob;
 
 #[cfg(not(feature = "legacy"))]
-fn set_legacy(_: &mut gcc::Config) {
-}
+fn set_legacy(_: &mut gcc::Config) {}
 
 #[cfg(feature = "legacy")]
 fn set_legacy(config: &mut gcc::Config) {
@@ -13,12 +12,14 @@ fn set_legacy(config: &mut gcc::Config) {
 fn main() {
     let mut config = gcc::Config::new();
 
-    let globs = &["zstd/lib/common/*.c",
-                  "zstd/lib/compress/*.c",
-                  "zstd/lib/decompress/*.c",
-                  "zstd/lib/legacy/*.c",
-                  "zstd/lib/deprecated/*.c",
-                  "zstd/lib/dictBuilder/*.c"];
+    let globs = &[
+        "zstd/lib/common/*.c",
+        "zstd/lib/compress/*.c",
+        "zstd/lib/decompress/*.c",
+        "zstd/lib/legacy/*.c",
+        "zstd/lib/deprecated/*.c",
+        "zstd/lib/dictBuilder/*.c",
+    ];
 
     for pattern in globs {
         for path in glob::glob(pattern).unwrap() {

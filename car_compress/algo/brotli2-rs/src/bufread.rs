@@ -4,7 +4,7 @@ use std::cmp;
 use std::io::prelude::*;
 use std::io::{self, Cursor};
 
-use stream::{Decompress, Status, Compress, CompressParams};
+use stream::{Compress, CompressParams, Decompress, Status};
 
 /// A brotli encoder, or compressor.
 ///
@@ -41,7 +41,7 @@ impl<R: BufRead> BrotliEncoder<R> {
             obj: r,
             max: data.input_block_size(),
             cur: 0,
-            data: data,
+            data,
             done: false,
         }
     }
@@ -55,7 +55,7 @@ impl<R: BufRead> BrotliEncoder<R> {
             obj: r,
             max: data.input_block_size(),
             cur: 0,
-            data: data,
+            data,
             done: false,
         }
     }
@@ -81,7 +81,7 @@ impl<R: BufRead> BrotliEncoder<R> {
 
 impl<R: BufRead> Read for BrotliEncoder<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
 
@@ -97,11 +97,11 @@ impl<R: BufRead> Read for BrotliEncoder<R> {
         loop {
             assert!(self.cur < self.max);
             let (amt_in, mut out) = {
-                let input = try!(self.obj.fill_buf());
+                let input = self.obj.fill_buf()?;
                 let amt = cmp::min(input.len(), self.max - self.cur);
                 self.data.copy_input(&input[..amt]);
                 self.cur += amt;
-                (amt, try!(self.data.compress(amt == 0, false)))
+                (amt, self.data.compress(amt == 0, false)?)
             };
             self.cur = 0;
             self.obj.consume(amt_in);
@@ -109,12 +109,12 @@ impl<R: BufRead> Read for BrotliEncoder<R> {
                 self.done = true;
             }
 
-            if out.len() == 0 {
+            if out.is_empty() {
                 assert!(!self.done);
                 continue;
             }
-            let ret = try!(out.read(buf));
-            if out.len() > 0 {
+            let ret = out.read(buf)?;
+            if !out.is_empty() {
                 self.buf.get_mut().extend_from_slice(out);
             }
             return Ok(ret);
@@ -153,16 +153,16 @@ impl<R: BufRead> BrotliDecoder<R> {
 
 impl<R: BufRead> Read for BrotliDecoder<R> {
     fn read(&mut self, mut buf: &mut [u8]) -> io::Result<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
 
         loop {
             let (status, amt_in, amt_out) = {
-                let mut input = try!(self.obj.fill_buf());
+                let mut input = self.obj.fill_buf()?;
                 let input_len = input.len();
                 let buf_len = buf.len();
-                let status = try!(self.data.decompress(&mut input, &mut buf));
+                let status = self.data.decompress(&mut input, &mut buf)?;
                 (status, input_len - input.len(), buf_len - buf.len())
             };
             self.obj.consume(amt_in);
