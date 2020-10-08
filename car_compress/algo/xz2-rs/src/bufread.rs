@@ -86,7 +86,7 @@ impl<R: BufRead> Read for XzEncoder<R> {
         loop {
             let (read, consumed, eof, ret);
             {
-                let input = try!(self.obj.fill_buf());
+                let input = self.obj.fill_buf()?;
                 eof = input.is_empty();
                 let before_out = self.data.total_out();
                 let before_in = self.data.total_in();
@@ -166,7 +166,7 @@ impl<R: BufRead> Read for XzDecoder<R> {
         loop {
             let (read, consumed, eof, ret);
             {
-                let input = try!(self.obj.fill_buf());
+                let input = self.obj.fill_buf()?;
                 eof = input.is_empty();
                 let before_out = self.data.total_out();
                 let before_in = self.data.total_in();
@@ -175,8 +175,7 @@ impl<R: BufRead> Read for XzDecoder<R> {
                 consumed = (self.data.total_in() - before_in) as usize;
             }
             self.obj.consume(consumed);
-
-            try!(ret);
+            ret?;
             if read > 0 || eof || buf.len() == 0 {
                 return Ok(read);
             }

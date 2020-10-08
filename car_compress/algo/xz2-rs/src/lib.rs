@@ -23,7 +23,7 @@
 //! assert_eq!(contents, "Hello, World!");
 //! ```
 
-#![deny(missing_docs, warnings)]
+#![deny(missing_docs)]
 #![doc(html_root_url = "http://alexcrichton.com/xz2-rs")]
 
 extern crate lzma_sys;

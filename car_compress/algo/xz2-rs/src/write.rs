@@ -40,8 +40,8 @@ impl<W: Write> XzEncoder<W> {
     }
 
     fn dump(&mut self) -> io::Result<()> {
-        if self.buf.len() > 0 {
-            try!(self.obj.as_mut().unwrap().write_all(&self.buf));
+        if !self.buf.is_empty() {
+            self.obj.as_mut().unwrap().write_all(&self.buf)?;
             self.buf.truncate(0);
         }
         Ok(())
@@ -49,8 +49,8 @@ impl<W: Write> XzEncoder<W> {
 
     fn do_finish(&mut self) -> io::Result<()> {
         loop {
-            try!(self.dump());
-            let res = try!(self.data.process_vec(&[], &mut self.buf, Action::Finish));
+            self.dump()?;
+            let res = self.data.process_vec(&[], &mut self.buf, Action::Finish)?;
             if res == Status::StreamEnd {
                 break;
             }
@@ -63,7 +63,7 @@ impl<W: Write> XzEncoder<W> {
     /// This will flush the underlying data stream and then return the contained
     /// writer if the flush succeeded.
     pub fn finish(mut self) -> io::Result<W> {
-        try!(self.do_finish());
+        self.do_finish()?;
         Ok(self.obj.take().unwrap())
     }
 
@@ -86,7 +86,7 @@ impl<W: Write> XzEncoder<W> {
 impl<W: Write> Write for XzEncoder<W> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         loop {
-            try!(self.dump());
+            self.dump()?;
 
             let total_in = self.total_in();
             self.data
@@ -102,7 +102,7 @@ impl<W: Write> Write for XzEncoder<W> {
 
     fn flush(&mut self) -> io::Result<()> {
         loop {
-            try!(self.dump());
+            self.dump()?;
             let status = self
                 .data
                 .process_vec(&[], &mut self.buf, Action::FullFlush)
@@ -154,7 +154,7 @@ impl<W: Write> XzDecoder<W> {
 
     fn do_finish(&mut self) -> io::Result<()> {
         loop {
-            try!(self.dump());
+            self.dump()?;
             let res = try!(self.data.process_vec(&[], &mut self.buf, Action::Run));
             if res == Status::StreamEnd {
                 break;
@@ -165,7 +165,7 @@ impl<W: Write> XzDecoder<W> {
 
     /// Unwrap the underlying writer, finishing the compression stream.
     pub fn finish(&mut self) -> io::Result<W> {
-        try!(self.do_finish());
+        self.do_finish()?;
         Ok(self.obj.take().unwrap())
     }
 
@@ -188,10 +188,10 @@ impl<W: Write> XzDecoder<W> {
 impl<W: Write> Write for XzDecoder<W> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         loop {
-            try!(self.dump());
+            self.dump()?;
 
             let before = self.total_in();
-            let res = try!(self.data.process_vec(data, &mut self.buf, Action::Run));
+            let res = self.data.process_vec(data, &mut self.buf, Action::Run)?;
             let written = (self.total_in() - before) as usize;
 
             if written > 0 || data.len() == 0 || res == Status::StreamEnd {
@@ -201,7 +201,7 @@ impl<W: Write> Write for XzDecoder<W> {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        try!(self.dump());
+        self.dump()?;
         self.obj.as_mut().unwrap().flush()
     }
 }
